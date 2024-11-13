@@ -13,10 +13,10 @@
 ](https://github.com/Yukiriri/ReimaginedScheduling/releases)
 ![Downloads](https://img.shields.io/github/downloads/Yukiriri/ReimaginedScheduling/total?style=for-the-badge)
 
-</div>
-
 通过观测游戏的线程负载，重新规划线程分配，让高负载主线程独占核心，从而使用完整的单核性能，帮助高端硬件更上一层楼。  
 Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安心玩游戏。  
+
+</div>
 
 # 食用效果
 - ### 食用前
