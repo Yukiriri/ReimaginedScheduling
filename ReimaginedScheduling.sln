@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{894A6E95-0AA2-43D1-85B3-749FAFD4164F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReimaginedScheduling.Services", "src\ReimaginedScheduling.Services\ReimaginedScheduling.Services.csproj", "{C42A7A49-159E-4E08-9720-82F338F6C8FF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Debug|x64.Build.0 = Debug|Any CPU
+		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Release|x64.ActiveCfg = Release|Any CPU
+		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Release|x64.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E1CC381E-D71B-49B6-B8C3-42CF63FB80D1}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,41 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  Build_Directory: ./bin
+  Build_Configuration: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Run build
+      run: |
+        dotnet build -c ${{ env.Build_Configuration }}
+
+    - name: Archive release
+      uses: thedoctor0/zip-release@0.7.6
+      with:
+        path: "${{ env.Build_Directory }}"
+        filename: "${{ env.Build_Directory }}/${{ github.event.repository.name }}.zip"
+
+    - name: Upload release
+      uses: ncipollo/release-action@v1
+      with:
+        name: "Automatic Build ${{ github.run_number }}"
+        tag: "${{ github.run_number }}"
+        artifacts: "${{ env.Build_Directory }}/*.zip"

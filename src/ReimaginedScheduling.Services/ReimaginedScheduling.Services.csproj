@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon>118589293_p0.ico</ApplicationIcon>
+    <BaseOutputPath>..\..\bin</BaseOutputPath>
+    <PlatformTarget>x64</PlatformTarget>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>AnyCPU</Platforms>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="118589293_p0.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Vanara.Core" Version="4.0.4" />
+    <PackageReference Include="Vanara.PInvoke.Kernel32" Version="4.0.4" />
+    <PackageReference Include="Vanara.PInvoke.Pdh" Version="4.0.4" />
+    <PackageReference Include="Vanara.PInvoke.Security" Version="4.0.4" />
+    <PackageReference Include="Vanara.PInvoke.Shell32" Version="4.0.4" />
+    <PackageReference Include="Vanara.PInvoke.User32" Version="4.0.4" />
+    <PackageReference Include="Vanara.Security" Version="4.0.4" />
+  </ItemGroup>
+
+</Project>
