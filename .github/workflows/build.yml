@@ -38,4 +38,4 @@ jobs:
         with:
           name: "V${{ github.run_number }}"
           tag: "V${{ github.run_number }}"
-          artifacts: "${{ env.Build_Directory }}/**/*.exe"
+          artifacts: "${{ env.Build_Directory }}/**/publish/*.exe"
