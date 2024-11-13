@@ -1,19 +1,11 @@
 ﻿using ReimaginedScheduling.Services;
 using ReimaginedScheduling.Services.Utils;
+using System;
+using System.Threading;
 using Vanara.PInvoke;
 
 CPUSetInfo.WriteLine();
 Console.WriteLine(Config.ConsoleSplitRow);
-
-
-//var pm = new PerformanceMonitor();
-//for (int i = 0; i < 10; i++)
-//{
-//    Console.Clear();
-
-//    Thread.Sleep(501);
-//}
-
 
 Console.WriteLine($"SeDebug: {GameRules.SeDebug()}");
 Console.WriteLine(Config.ConsoleSplitRow);

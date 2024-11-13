@@ -6,36 +6,36 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env:
-  Build_Directory: ./bin
-  Build_Configuration: Release
-
 jobs:
+
   build:
     runs-on: windows-latest
+    env:
+      Build_Configuration: Release
+      Build_Directory: ./bin
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Install .NET Core
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
 
-    - name: Run build
-      run: |
-        dotnet build -c ${{ env.Build_Configuration }}
+      - name: Run build
+        run: |
+          dotnet publish -c ${{ env.Build_Configuration }} --sc
 
-    - name: Zip artifacts
-      uses: thedoctor0/zip-release@0.7.6
-      with:
-        path: "${{ env.Build_Directory }}"
-        filename: "${{ env.Build_Directory }}/${{ github.event.repository.name }}.zip"
+      # - name: Zip artifacts
+      #   uses: thedoctor0/zip-release@0.7.6
+      #   with:
+      #     path: "${{ env.Build_Directory }}"
+      #     filename: "${{ env.Build_Directory }}/${{ github.event.repository.name }}.zip"
 
-    - name: Create new release
-      uses: ncipollo/release-action@v1
-      with:
-        name: "V${{ github.run_number }}"
-        tag: "V${{ github.run_number }}"
-        artifacts: "${{ env.Build_Directory }}/*.zip"
+      - name: Create new release
+        uses: ncipollo/release-action@v1
+        with:
+          name: "V${{ github.run_number }}"
+          tag: "V${{ github.run_number }}"
+          artifacts: "${{ env.Build_Directory }}/**/*.exe"
