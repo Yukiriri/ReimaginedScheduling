@@ -1,17 +1,27 @@
 <div align="center">
 
-![Banner](https://socialify.git.ci/Yukiriri/ReimaginedScheduling/image?description=1&language=1&name=1&owner=1&pattern=Circuit%20Board&theme=Auto)
+[![Banner](https://socialify.git.ci/Yukiriri/ReimaginedScheduling/image?description=1&language=1&name=1&owner=1&pattern=Circuit%20Board&theme=Auto)]()
 
-![Stars](https://img.shields.io/github/stars/Yukiriri/ReimaginedScheduling?style=for-the-badge)
-![Forks](https://img.shields.io/github/forks/Yukiriri/ReimaginedScheduling?style=for-the-badge)
-![Issues](https://img.shields.io/github/issues/Yukiriri/ReimaginedScheduling?style=for-the-badge)
-![Pull](https://img.shields.io/github/issues-pr/Yukiriri/ReimaginedScheduling?style=for-the-badge)
+[![Stars](https://img.shields.io/github/stars/Yukiriri/ReimaginedScheduling?style=for-the-badge)](
+    https://github.com/Yukiriri/ReimaginedScheduling/stargazers
+)
+[![Forks](https://img.shields.io/github/forks/Yukiriri/ReimaginedScheduling?style=for-the-badge)](
+    https://github.com/Yukiriri/ReimaginedScheduling/forks
+)
+[![Issues](https://img.shields.io/github/issues/Yukiriri/ReimaginedScheduling?style=for-the-badge)](
+    https://github.com/Yukiriri/ReimaginedScheduling/issues
+)
+[![Pull](https://img.shields.io/github/issues-pr/Yukiriri/ReimaginedScheduling?style=for-the-badge)](
+    https://github.com/Yukiriri/ReimaginedScheduling/pulls
+)
 
-[![Build](https://img.shields.io/github/actions/workflow/status/Yukiriri/ReimaginedScheduling/build.yml?style=for-the-badge)
-](https://github.com/Yukiriri/ReimaginedScheduling/actions/workflows/build.yml)
-[![Release](https://img.shields.io/github/v/release/Yukiriri/ReimaginedScheduling?style=for-the-badge)
-](https://github.com/Yukiriri/ReimaginedScheduling/releases)
-![Downloads](https://img.shields.io/github/downloads/Yukiriri/ReimaginedScheduling/total?style=for-the-badge)
+[![Build](https://img.shields.io/github/actions/workflow/status/Yukiriri/ReimaginedScheduling/build.yml?style=for-the-badge)](
+    https://github.com/Yukiriri/ReimaginedScheduling/actions/workflows/build.yml
+)
+[![Release](https://img.shields.io/github/v/release/Yukiriri/ReimaginedScheduling?style=for-the-badge)](
+    https://github.com/Yukiriri/ReimaginedScheduling/releases
+)
+[![Downloads](https://img.shields.io/github/downloads/Yukiriri/ReimaginedScheduling/total?style=for-the-badge)]()
 
 通过观测游戏的线程负载，重新规划线程分配，让高负载主线程独占核心，从而使用完整的单核性能，帮助高端硬件更上一层楼。  
 Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安心玩游戏。  
