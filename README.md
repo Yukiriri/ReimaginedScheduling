@@ -1,11 +1,22 @@
 <div align="center">
 
-![ReimaginedScheduling](https://socialify.git.ci/Yukiriri/ReimaginedScheduling/image?description=1&forks=1&issues=1&language=1&name=1&owner=1&pattern=Circuit%20Board&pulls=1&stargazers=1&theme=Auto)
+![Banner](https://socialify.git.ci/Yukiriri/ReimaginedScheduling/image?description=1&language=1&name=1&owner=1&pattern=Circuit%20Board&theme=Auto)
+
+![Stars](https://img.shields.io/github/stars/Yukiriri/ReimaginedScheduling?style=for-the-badge)
+![Forks](https://img.shields.io/github/forks/Yukiriri/ReimaginedScheduling?style=for-the-badge)
+![Issues](https://img.shields.io/github/issues/Yukiriri/ReimaginedScheduling?style=for-the-badge)
+![Pull](https://img.shields.io/github/issues-pr/Yukiriri/ReimaginedScheduling?style=for-the-badge)
+
+[![Build](https://img.shields.io/github/actions/workflow/status/Yukiriri/ReimaginedScheduling/build.yml?style=for-the-badge)
+](https://github.com/Yukiriri/ReimaginedScheduling/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/Yukiriri/ReimaginedScheduling?style=for-the-badge)
+](https://github.com/Yukiriri/ReimaginedScheduling/releases)
+![Downloads](https://img.shields.io/github/downloads/Yukiriri/ReimaginedScheduling/total?style=for-the-badge)
 
 </div>
 
-通过观测游戏的线程负载，重新规划线程分配，让高负载主线程独占核心，从而使用完整的单核性能，帮助高端硬件更上一层楼  
-Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安心玩游戏  
+通过观测游戏的线程负载，重新规划线程分配，让高负载主线程独占核心，从而使用完整的单核性能，帮助高端硬件更上一层楼。  
+Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安心玩游戏。  
 
 # 食用效果
 - ### 食用前
@@ -14,9 +25,7 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
 ![](./md/img/after.png)
 
 # 食用方式
-1. 下载
-    - 选择1：前往[Release](https://github.com/Yukiriri/ReimaginedScheduling/releases)下载已编译好的版本
-    - 选择2：下载仓库进行编译
+1. 前往 [Release](https://github.com/Yukiriri/ReimaginedScheduling/releases) 下载已编译好的版本
 2. 进入目录运行ReimaginedScheduling.Services.exe
 3. 开始玩游戏
 4. （可选）观察ReimaginedScheduling.Services.exe的控制台输出
@@ -49,8 +58,8 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
             ### 建议关闭
             > 这个选项会影响多数软件计算CPU的正确占用率  
     - ## 电源计划注意项
-        不要再尝试 `最小核心放置50%` + `SMT循环` 的组合  
-        这个组合将完全破坏我的程序正常运行  
+        不要再尝试 `最小放置核心50%` + `SMT循环` 的组合  
+        这个组合搭配我的程序会发生灾难  
 
 ## 致谢
 - [dahall/Vanara](https://github.com/dahall/Vanara)

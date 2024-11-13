@@ -27,13 +27,13 @@ jobs:
       run: |
         dotnet build -c ${{ env.Build_Configuration }}
 
-    - name: Archive release
+    - name: Zip artifacts
       uses: thedoctor0/zip-release@0.7.6
       with:
         path: "${{ env.Build_Directory }}"
         filename: "${{ env.Build_Directory }}/${{ github.event.repository.name }}.zip"
 
-    - name: Upload release
+    - name: Create new release
       uses: ncipollo/release-action@v1
       with:
         name: "Automatic Build ${{ github.run_number }}"
