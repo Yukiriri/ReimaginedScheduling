@@ -20,7 +20,7 @@ namespace ReimaginedScheduling.Services
 
         public static int MaxThreadMonitorCount { get; set; } = 350;
         public static int ThreadSamplingCount { get; set; } = 10;
-        public static int ThreadAntiJitterUsageThreshold { get; set; } = 20;
+        public static int ThreadAntiJitterUsageThreshold { get; set; } = 12;
 
         //public static void Load()
         //{
