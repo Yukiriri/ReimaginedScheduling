@@ -25,6 +25,7 @@
 
 通过观测游戏的线程负载，重新规划线程分配，让高负载主线程独占核心，从而使用完整的单核性能，帮助高端硬件更上一层楼。  
 Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安心玩游戏。  
+由于我拥有的硬件和游戏有限，目前已涵盖范围还比较少，期待能和大家一起完善，如果在特定情况遇到问题或者有建议，欢迎提出。  
 
 </div>
 
@@ -55,21 +56,21 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
     </table>
 - ## AMD注意项
     - ## BIOS注意项
-        - PSS Support(Cool n Quite)
+        - ### PSS Support(Cool n Quite)
             ### 强烈建议别关
-            > 关掉后将连带关闭CPPC等诸多自动性能调节  
-            > 带来的严重影响：就算帧率再高，Frametime再直线，游戏渲染出来也是一顿一顿  
-            > 打开Windows事件查看器，筛选Kernel-Processor-Power事件，会看见ACPI None，而正常情况是ACPI CPPC  
-        - CPPC PC
+            关掉后将连带关闭CPPC等诸多自动性能调节  
+            带来的严重影响：就算帧率再高，Frametime再直线，游戏渲染出来也是一顿一顿  
+            打开`Windows事件查看器`，筛选`Kernel-Processor-Power`事件，会看见`ACPI None`，而正常情况是`ACPI CPPC`  
+        - ### CPPC PC
             ### 建议保持Auto
-            > 关掉后会将所有核心的性能上限同步为最雷的核心的上限  
-            > 打开Windows事件查看器，筛选Kernel-Processor-Power事件，也可以看见变化  
-        - Global C State
+            关掉后会将所有核心的性能上限同步为最雷的核心的上限  
+            打开`Windows事件查看器`，筛选`Kernel-Processor-Power`事件，也可以看见变化  
+        - ### Global C State
             ### 建议关闭
-            > 这个选项会影响多数软件计算CPU的正确占用率  
+            这个选项会影响多数软件计算CPU的正确占用率  
     - ## 电源计划注意项
         不要再尝试 `最小放置核心50%` + `SMT循环` 的组合  
-        这个组合搭配我的程序会发生灾难  
+        这个组合搭配我的程序会让Windows水土不服  
 
 ## 致谢
 - [dahall/Vanara](https://github.com/dahall/Vanara)

@@ -126,7 +126,7 @@ namespace ReimaginedScheduling.Services
                              select th;
             var usedExclusiveCount = Math.Min(highLoadTh.Count(), Config.MaxExclusiveCount);
             var peCores = CPUSetInfo.PhysicalPECoreList;
-            SortedDictionary<uint, uint[]> exclusiveCores = []; //key = cpuid, value = [tid, usage]
+            SortedDictionary<uint, int[]> exclusiveCores = []; //key = cpuid, value = [tid, usage]
             List<uint> sharedCores = [];
             for (int i = 0; i < peCores.Count; i++)
             {
@@ -135,9 +135,9 @@ namespace ReimaginedScheduling.Services
                 {
                     var th = highLoadTh.ElementAt(i);
                     var thInstanceID = th.Key;
-                    var thUsage = th.Value;
-                    var tid = (uint)processData.ThreadID[thInstanceID];
-                    exclusiveCores[cpuid] = [tid, (uint)thUsage];
+                    var thUsage = (int)th.Value;
+                    var tid = (int)processData.ThreadID[thInstanceID];
+                    exclusiveCores[cpuid] = [tid, thUsage];
                 }
                 else
                 {
@@ -145,56 +145,67 @@ namespace ReimaginedScheduling.Services
                 }
             }
 
-            static bool SetThreadCPUID(uint tid, uint[] cpuid, [Optional] uint usage)
+            static bool SetThreadCPUID(int tid, [Optional] uint cpuid, [Optional] int usage)
             {
-                using var hThread = Kernel32.OpenThread((uint)(Kernel32.ThreadAccess.THREAD_SET_LIMITED_INFORMATION), false, tid);
+                using var hThread = Kernel32.OpenThread((uint)(Kernel32.ThreadAccess.THREAD_SET_LIMITED_INFORMATION), false, (uint)tid);
                 if (hThread.IsNull)
                 {
                     Console.WriteLine($"OpenThread失败：TID={tid} Error={Win32Error.GetLastError()}");
                     return false;
                 }
-                if (!Kernel32.SetThreadSelectedCpuSets(hThread, cpuid, (uint)cpuid.Length))
+                uint[] id = cpuid == 0 ? [] : [cpuid];
+                if (!Kernel32.SetThreadSelectedCpuSets(hThread, id, (uint)id.Length))
                 {
                     Console.WriteLine($"SetThreadSelectedCpuSets失败：TID={tid}");
                     return false;
                 }
-                if (cpuid.Length > 0)
-                    Console.WriteLine($"{cpuid[0]}={tid,-5}({usage}%)");
+                if (id.Length > 0)
+                    Console.WriteLine($"{cpuid}={tid,-5}({usage}%)");
                 return true;
             }
 
             var isChanged = false;
             for (int i = 0; i < processData.LastExclusiveCores.Count; i++)
             {
-                var ec = processData.LastExclusiveCores.ElementAt(i);
-                var oldTID = ec.Value[0];
-                var usage = ec.Value[1];
+                var oldEC = processData.LastExclusiveCores.ElementAt(i);
+                var oldTID = oldEC.Value[0];
+                var oldUsage = oldEC.Value[1];
+                var newEC = exclusiveCores.ElementAt(i);
+                var newTID = newEC.Value[0];
+                var newUsage = newEC.Value[1];
+
                 if (i < Math.Min(processData.LastExclusiveCores.Count, exclusiveCores.Count))
                 {
-                    var newTID = exclusiveCores.ElementAt(i).Value[0];
                     if (newTID == oldTID)
                         continue;
+                    if (Math.Abs(newUsage - oldUsage) <= Config.ThreadAntiJitterUsageThreshold)
+                        continue;
                 }
-                SetThreadCPUID(oldTID, []);
+                SetThreadCPUID(oldTID);
                 isChanged = true;
             }
-            if (processData.LastExclusiveCores.Count > 0 && !isChanged)
-                return;
-            Console.WriteLine($"更新独占：PID={processData.PID} name={processData.WindowName}");
-            Console.WriteLine($"独占{exclusiveCores.Count} / 共享{sharedCores.Count}");
-            for (int i = 0; i < exclusiveCores.Count; i++)
+            if (processData.LastExclusiveCores.Count == 0 || isChanged)
             {
-                var ec = exclusiveCores.ElementAt(i);
-                var cpuid = ec.Key;
-                var tid = ec.Value[0];
-                var usage = ec.Value[1];
-                SetThreadCPUID(tid, [cpuid], usage);
+                Console.WriteLine($"需要更新：PID={processData.PID} name={processData.WindowName}");
+                //Console.WriteLine($"独占{exclusiveCores.Count} / 共享{sharedCores.Count}");
+                for (int i = 0; i < exclusiveCores.Count; i++)
+                {
+                    var ec = exclusiveCores.ElementAt(i);
+                    var cpuid = ec.Key;
+                    var tid = ec.Value[0];
+                    var usage = ec.Value[1];
+                    SetThreadCPUID(tid, cpuid, usage);
+                }
+                if (!Kernel32.SetProcessDefaultCpuSets(processData.hProcess, [.. sharedCores], (uint)sharedCores.Count))
+                {
+                    Console.WriteLine($"SetProcessDefaultCpuSets失败，独占有可能被污染");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"不需要更新：PID={processData.PID} name={processData.WindowName}");
             }
             processData.LastExclusiveCores = exclusiveCores;
-            if (!Kernel32.SetProcessDefaultCpuSets(processData.hProcess, [.. sharedCores], (uint)sharedCores.Count))
-            {
-                Console.WriteLine($"SetProcessDefaultCpuSets失败，独占有可能被污染");
-            }
             Console.WriteLine(Config.ConsoleSplitRow);
         }
 
@@ -222,6 +233,6 @@ namespace ReimaginedScheduling.Services
         public Dictionary<int, double> ThreadID = [];
         public int SamplingCount = 0;
 
-        public SortedDictionary<uint, uint[]> LastExclusiveCores = [];
+        public SortedDictionary<uint, int[]> LastExclusiveCores = [];
     }
 }

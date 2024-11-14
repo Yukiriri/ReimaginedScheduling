@@ -25,7 +25,7 @@ jobs:
 
       - name: Run build
         run: |
-          dotnet publish -c ${{ env.Build_Configuration }} --sc
+          dotnet publish -c ${{ env.Build_Configuration }}
 
       # - name: Zip artifacts
       #   uses: thedoctor0/zip-release@0.7.6
