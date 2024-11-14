@@ -18,10 +18,7 @@
 [![Build](https://img.shields.io/github/actions/workflow/status/Yukiriri/ReimaginedScheduling/build.yml?style=for-the-badge)](
     https://github.com/Yukiriri/ReimaginedScheduling/actions/workflows/build.yml
 )
-[![Release](https://img.shields.io/github/v/release/Yukiriri/ReimaginedScheduling?style=for-the-badge)][Release]
 [![Downloads](https://img.shields.io/github/downloads/Yukiriri/ReimaginedScheduling/total?style=for-the-badge)]()
-
-[Release]: https://github.com/Yukiriri/ReimaginedScheduling/releases
 
 通过观测游戏的线程负载，重新规划线程分配，让高负载主线程独占核心，从而使用完整的单核性能，帮助高端硬件更上一层楼。  
 Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安心玩游戏。  
@@ -36,7 +33,7 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
 ![](./md/img/after.png)
 
 # 食用方式
-1. 前往 [Release] 下载已编译好的版本
+1. 前往 [Release](https://github.com/Yukiriri/ReimaginedScheduling/releases) 下载已编译好的版本
 2. 进入目录运行ReimaginedScheduling.Services.exe
 3. 开始玩游戏
 4. （可选）观察ReimaginedScheduling.Services.exe的控制台输出
