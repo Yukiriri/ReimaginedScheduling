@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: windows-latest
     env:
-      DOTNET_INSTALL_DIR: C:\\Program Files\\dotnet
+      DOTNET_INSTALL_DIR: ./.dotnet-sdk
       Build_Configuration: Release
       Build_Directory: ./bin
 
