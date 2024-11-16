@@ -24,6 +24,7 @@ namespace ReimaginedScheduling.Services
         public static int MaxThreadMonitorCount { get; set; } = 350;
         public static int ThreadSamplingCount { get; set; } = 10;
         public static int ThreadUsageThreshold { get; set; } = 5;
+        public static int ThreadUsageOffsetThreshold { get; set; } = 10;
 
         //public static void Load()
         //{
