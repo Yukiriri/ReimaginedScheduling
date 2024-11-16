@@ -153,7 +153,7 @@ namespace ReimaginedScheduling.Services
             }
 
             var beDefaultTIDList = processData.LastExclusiveCores
-                .Select((lec, index) => exclusiveCores.Where(ec => lec.TID == ec.TID).Any() ? 0 : lec.TID)
+                .Select((lec, index) => index < exclusiveCores.Length ? (exclusiveCores.Where(ec => lec.TID == ec.TID).Any() ? 0 : lec.TID) : lec.TID)
                 .ToArray();
             if (beDefaultTIDList.Where(tid => tid != 0).Any())
             {
