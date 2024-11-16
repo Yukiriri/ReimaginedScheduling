@@ -14,7 +14,7 @@ namespace ReimaginedScheduling.Services
         public GameRules()
         {
             User32.GetWindowRect(User32.GetDesktopWindow(), out _deskRect);
-            Console.Write($"{"Name",-20}");
+            Console.Write($"{"Name",-30}");
             foreach (var cpuid in CPUSetInfo.PhysicalPCoreList.Take(Config.MaxExclusiveCount)) Console.Write($"{$"CPU{cpuid - CPUSetInfo.BeginCPUID}",-13}");
             Console.WriteLine();
         }
@@ -157,11 +157,11 @@ namespace ReimaginedScheduling.Services
                 .ToArray();
             if (beDefaultTIDList.Where(tid => tid != 0).Any())
             {
-                Console.Write($"{$"[{processData.WindowName}]",-20}");
+                Console.Write($"{$"[{processData.WindowName}]",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++) Console.Write($"{"|",-13}");
                 Console.WriteLine();
 
-                Console.Write($"{$"[{processData.WindowName}]",-20}");
+                Console.Write($"{$"[{processData.WindowName}]({exclusiveCores.Length}/{sharedCores.Length})",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++)
                 {
                     var tid = beDefaultTIDList[i];
@@ -182,18 +182,18 @@ namespace ReimaginedScheduling.Services
             var beOverrideTIDList = processData.LastExclusiveCores
                 .Select((lec, index) => index < exclusiveCores.Length && lec.TID != exclusiveCores[index].TID ? exclusiveCores[index] : new())
                 .ToArray();
-            var lecUsage = processData.LastExclusiveCores
-                .Where((lec, index) => beOverrideTIDList[index].Usage > 0)
-                .Aggregate(0u, (sum, next) => sum + next.Usage) / beOverrideTIDList.Length;
-            var ecUsage = beOverrideTIDList
-                .Aggregate(0u, (sum, next) => sum + next.Usage) / beOverrideTIDList.Length;
-            if (beOverrideTIDList.Where(tid => tid.TID != 0).Any() && Math.Abs(lecUsage - ecUsage) >= Config.ThreadUsageOffsetThreshold)
+            //var lecUsage = processData.LastExclusiveCores
+            //    .Where((lec, index) => beOverrideTIDList[index].Usage > 0)
+            //    .Aggregate(0u, (sum, next) => sum + next.Usage) / beOverrideTIDList.Length;
+            //var ecUsage = beOverrideTIDList
+            //    .Aggregate(0u, (sum, next) => sum + next.Usage) / beOverrideTIDList.Length;
+            if (beOverrideTIDList.Where(tid => tid.TID != 0).Any() /*&& Math.Abs(lecUsage - ecUsage) >= Config.ThreadUsageOffsetThreshold*/)
             {
-                Console.Write($"{$"[{processData.WindowName}]",-20}");
+                Console.Write($"{$"[{processData.WindowName}]",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++) Console.Write($"{"|",-13}");
                 Console.WriteLine();
 
-                Console.Write($"{$"[{processData.WindowName}]",-20}");
+                Console.Write($"{$"[{processData.WindowName}]({exclusiveCores.Length}/{sharedCores.Length})",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++)
                 {
                     var otid = beOverrideTIDList[i];
