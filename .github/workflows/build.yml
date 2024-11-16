@@ -12,7 +12,6 @@ jobs:
     runs-on: windows-latest
     env:
       DOTNET_INSTALL_DIR: ./.dotnet-sdk
-      Build_Configuration: Release
       Build_Directory: ./bin
 
     steps:
@@ -34,7 +33,7 @@ jobs:
 
       - name: Run build
         run: |
-          dotnet publish -c ${{ env.Build_Configuration }}
+          dotnet publish -c Release
 
       # - name: Zip artifacts
       #   uses: thedoctor0/zip-release@0.7.6
