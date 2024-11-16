@@ -50,7 +50,7 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
     <tr><th>设置</th>                       <th>系统版本</th>     <th>N卡</th>        <th>A卡</th>               <th>I卡</th></tr>
     <tr><td rowspan="2">硬件加速GPU计划</td> <td>23H2以及以前</td> <td>建议不开</td>   <td rowspan="2">不支持</td> <td rowspan="4">没用过不知道</td></tr>
     <tr>                                    <td>24H2以及以后</td> <td>不开白不开</td> </tr>
-    <tr><td rowspan="1">窗口化游戏优化</td>  <td>21H2-24H2</td>    <td colspan="2">按使用软件决定</td></tr>
+    <tr><td rowspan="1">窗口化游戏优化</td>  <td>21H2-24H2</td>    <td colspan="2">不使用老软件可以开</td></tr>
     </table>
 - ## AMD注意项
     - ## BIOS注意项
