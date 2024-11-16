@@ -11,6 +11,7 @@ jobs:
   build:
     runs-on: windows-latest
     env:
+      DOTNET_INSTALL_DIR: C:\\Program Files\\dotnet
       Build_Configuration: Release
       Build_Directory: ./bin
 
@@ -18,7 +19,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install .NET Core
+      - name: Cache dotnet
+        id: cache-dotnet
+        uses: actions/cache@v4
+        with:
+          path: "${{ env.DOTNET_INSTALL_DIR }}"
+          key: "${{ runner.os }}-dotnet"
+
+      - name: Install dotnet
+        if: steps.cache-dotnet.outputs.cache-hit != 'true'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
