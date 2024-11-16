@@ -18,7 +18,9 @@
 [![Build](https://img.shields.io/github/actions/workflow/status/Yukiriri/ReimaginedScheduling/build.yml?style=for-the-badge)](
     https://github.com/Yukiriri/ReimaginedScheduling/actions/workflows/build.yml
 )
-[![Downloads](https://img.shields.io/github/downloads/Yukiriri/ReimaginedScheduling/total?style=for-the-badge)]()
+[![Downloads](https://img.shields.io/github/downloads/Yukiriri/ReimaginedScheduling/total?style=for-the-badge)][Release]
+
+[Release]: https://github.com/Yukiriri/ReimaginedScheduling/releases
 
 通过观测游戏的线程负载，重新规划线程分配，让高负载主线程独占核心，从而使用完整的单核性能，帮助高端硬件更上一层楼。  
 Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安心玩游戏。  
@@ -33,7 +35,7 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
 ![](./md/img/after.png)
 
 # 食用方式
-1. 前往 [Release](https://github.com/Yukiriri/ReimaginedScheduling/releases) 下载已编译好的版本
+1. 前往 [Release] 下载已编译好的版本
 2. 进入目录运行ReimaginedScheduling.Services.exe
 3. 开始玩游戏
 4. （可选）观察ReimaginedScheduling.Services.exe的控制台输出
@@ -45,11 +47,10 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
 # 调优避坑
 - ## 系统设置
     <table>
-    <tr><th>系统版本</th>                 <th>设置</th>            <th>N卡</th>       <th>A卡</th>      <th>I卡</th></tr>
-    <tr><td rowspan="2">23H2以及以前</td> <td>硬件加速GPU计划</td>  <td>建议不开</td>  <td>不支持</td>    <td rowspan="4">没用过不知道</td></tr>
-    <tr>                                 <td>窗口化游戏优化</td>   <td>建议不开</td>   <td>建议不开</td>  </tr>
-    <tr><td rowspan="2">24H2以及以后</td> <td>硬件加速GPU计划</td>  <td>不开白不开</td> <td>不支持</td>    </tr>
-    <tr>                                 <td>窗口化游戏优化</td>   <td>建议不开</td>   <td>建议开启</td>  </tr>
+    <tr><th>设置</th>                       <th>系统版本</th>     <th>N卡</th>        <th>A卡</th>     <th>I卡</th></tr>
+    <tr><td rowspan="2">硬件加速GPU计划</td> <td>23H2以及以前</td> <td>建议不开</td>   <td>不支持</td>   <td rowspan="4">没用过不知道</td></tr>
+    <tr>                                    <td>24H2以及以后</td> <td>不开白不开</td> <td>建议不开</td> </tr>
+    <tr><td rowspan="1">窗口化游戏优化</td>  <td>21H2-24H2</td>    <td colspan="2">按使用软件决定</td>  </tr>
     </table>
 - ## AMD注意项
     - ## BIOS注意项

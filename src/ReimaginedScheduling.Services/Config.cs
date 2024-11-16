@@ -6,21 +6,24 @@ namespace ReimaginedScheduling.Services
     {
         static Config()
         {
+            string s = ""; for (int i = 0; i < 100; i++) s += "=";
+            ConsoleSplitRow = s;
+
             MaxExclusiveCount = CPUSetInfo.PhysicalPCoreList.Count;
             if (CPUSetInfo.IsPCoreOnly)
                 MaxExclusiveCount /= 2;
         }
 
-        public static string ConsoleSplitRow { get; } = "====================================================================================================";
+        public static string ConsoleSplitRow { get; private set; }
         public static int MaxExclusiveCount { get; private set; }
         public static int TypicalExclusiveCount { get; } = 8;
 
-        public static long GPUUsageThreshold { get; set; } = 33;
-        public static long GPUMemUsageThreshold { get; set; } = 1250;
+        public static int GPUUsageThreshold { get; set; } = 25;
+        public static ulong GPUMemUsageThreshold { get; set; } = 1250;
 
         public static int MaxThreadMonitorCount { get; set; } = 350;
         public static int ThreadSamplingCount { get; set; } = 10;
-        public static int ThreadAntiJitterUsageThreshold { get; set; } = 12;
+        public static int ThreadUsageThreshold { get; set; } = 5;
 
         //public static void Load()
         //{

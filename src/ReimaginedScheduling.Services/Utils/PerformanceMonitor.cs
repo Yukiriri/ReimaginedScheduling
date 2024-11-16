@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Vanara.InteropServices;
 using Vanara.PInvoke;
@@ -19,59 +18,62 @@ namespace ReimaginedScheduling.Services.Utils
             Pdh.PdhCloseQuery(_hQuery);
         }
 
-        private double GetCPUUsage(string processorID)
-        {
-            var value = GetCounterValue("""\Processor(*)\% Processor Time""", Pdh.PDH_FMT.PDH_FMT_DOUBLE, new Regex($"{processorID}"));
-            return value.Count > 0 ? value.First().Value.doubleValue : 0;
-        }
-
-        public double GetCPUUsage(int processorID) => GetCPUUsage($"{processorID}");
-
         public double GetAllCPUUsage() => GetCPUUsage("_Total");
 
-        public double GetGPUUsage(uint? pid)
+        public double GetCPUUsage(uint processorID) => GetCPUUsage($"{processorID}");
+
+        private double GetCPUUsage(string pattern)
         {
-            double value = 0;
-            foreach (var item in GetCounterValue("""\GPU Engine(*)\Utilization Percentage""", Pdh.PDH_FMT.PDH_FMT_DOUBLE, new Regex($"pid_{pid}.*engtype_(3D|Graphics)")))
-            {
-                value += item.Value.doubleValue;
-            }
-            return value;
+            return GetCounterValue("""\Processor(*)\% Processor Time""", Pdh.PDH_FMT.PDH_FMT_DOUBLE)
+                .Where(v => v.name.Contains(pattern))
+                .Aggregate(0.0, (sum, next) => sum + next.value.doubleValue);
         }
 
-        public double GetAllGPUUsage() => GetGPUUsage(null);
+        public double GetAllGPUUsage() => GetGPUUsage(new Regex("."));
 
-        public long GetGPUMemUsage(uint? pid)
+        public double GetGPUUsage(uint PID) => GetGPUUsage(new Regex($"pid_{PID}_.*engtype_(3D|Graphics)"));
+
+        private double GetGPUUsage(Regex pattern)
         {
-            long value = 0;
-            foreach (var item in GetCounterValue("""\GPU Process Memory(*)\Dedicated Usage""", Pdh.PDH_FMT.PDH_FMT_LARGE, new Regex($"pid_{pid}")))
-            {
-                value += item.Value.largeValue;
-            }
-            return value;
+            return GetCounterValue("""\GPU Engine(*)\Utilization Percentage""", Pdh.PDH_FMT.PDH_FMT_DOUBLE)
+                .Where(v => pattern.IsMatch(v.name))
+                .Aggregate(0.0, (sum, next) => sum + next.value.doubleValue);
         }
 
-        public long GetAllGPUMemUsage() => GetGPUMemUsage(null);
+        public ulong GetAllGPUMemUsage() => GetGPUMemUsage("pid");
 
-        public Dictionary<int, double> GetProcessThreadUsage(string processName, int maxThread)
+        public ulong GetGPUMemUsage(uint PID) => GetGPUMemUsage($"pid_{PID}_");
+
+        public ulong GetGPUMemUsage(string pattern)
         {
-            var value = new Dictionary<int, double>();
+            return GetCounterValue("""\GPU Process Memory(*)\Dedicated Usage""", Pdh.PDH_FMT.PDH_FMT_LARGE)
+                .Where(v => v.name.Contains(pattern))
+                .Aggregate(0ul, (sum, next) => sum + (ulong)next.value.largeValue);
+        }
+
+        public (uint instanceID, double usage)[] GetProcessThreadUsage(string processName, int maxThread)
+        {
+            var value = new (uint instanceID, double usage)[maxThread];
             for (int i = 0; i < maxThread; i++)
-            {
-                var v = GetCounterValue($"""\Thread({processName}/{i})\% Processor Time""", Pdh.PDH_FMT.PDH_FMT_DOUBLE);
-                value[i] = v.Count > 0 ? v.First().Value.doubleValue : 0;
-            }
+                value[i] = ((uint)i, GetCounterValue($"""\Thread({processName}/{i})\% Processor Time""", Pdh.PDH_FMT.PDH_FMT_DOUBLE).DefaultIfEmpty().First().value.doubleValue);
             return value;
         }
 
-        public Dictionary<int, double> GetProcessThreadID(string processName, int maxThread)
+        public (uint instanceID, uint threadID)[] GetProcessThreadID(string processName, int maxThread)
         {
-            var value = new Dictionary<int, double>();
+            var value = new (uint instanceID, uint threadID)[maxThread];
             for (int i = 0; i < maxThread; i++)
-            {
-                var v = GetCounterValue($"""\Thread({processName}/{i})\ID Thread""", Pdh.PDH_FMT.PDH_FMT_DOUBLE);
-                value[i] = v.Count > 0 ? v.First().Value.doubleValue : 0;
-            }
+                value[i] = ((uint)i, (uint)GetCounterValue($"""\Thread({processName}/{i})\ID Thread""", Pdh.PDH_FMT.PDH_FMT_LONG).DefaultIfEmpty().First().value.longValue);
+            return value;
+        }
+
+        public (uint threadID, double usage)[] GetProcessThreadIDWithUsage(string processName, int maxThread)
+        {
+            var thu = GetProcessThreadUsage(processName, maxThread);
+            var thid = GetProcessThreadID(processName, maxThread);
+            var value = new (uint threadID, double usage)[maxThread];
+            for (int i = 0; i < maxThread; i++)
+                value[i] = (thid[i].threadID,  thu[i].usage);
             return value;
         }
 
@@ -84,9 +86,8 @@ namespace ReimaginedScheduling.Services.Utils
             }
         }
 
-        private Dictionary<string, Pdh.PDH_FMT_COUNTERVALUE> GetCounterValue(string counterName, Pdh.PDH_FMT counterType, [Optional] Regex regex)
+        private IEnumerable<(string name, Pdh.PDH_FMT_COUNTERVALUE value)> GetCounterValue(string counterName, Pdh.PDH_FMT counterType)
         {
-            var usage = new Dictionary<string, Pdh.PDH_FMT_COUNTERVALUE>();
             if (_counterList.TryGetValue(counterName, out var hCounter))
             {
                 var arrSize = 0u;
@@ -97,15 +98,7 @@ namespace ReimaginedScheduling.Services.Utils
                     {
                         foreach (var item in mem.ToArray<Pdh.PDH_FMT_COUNTERVALUE_ITEM>((int)arrCount))
                         {
-                            if (regex != null && !regex.IsMatch(item.szName))
-                                continue;
-                            var value = new Pdh.PDH_FMT_COUNTERVALUE();
-                            switch (counterType)
-                            {
-                                case Pdh.PDH_FMT.PDH_FMT_LARGE: value.largeValue += item.FmtValue.largeValue; break;
-                                case Pdh.PDH_FMT.PDH_FMT_DOUBLE: value.doubleValue += item.FmtValue.doubleValue; break;
-                            }
-                            usage[item.szName] = value;
+                            yield return (item.szName, item.FmtValue);
                         }
                     }
                 }
@@ -114,33 +107,9 @@ namespace ReimaginedScheduling.Services.Utils
             {
                 AddCounter(counterName);
             }
-            Update();
-            return usage;
         }
 
-        private bool AddCounter(string counterName)
-        {
-            if (!_counterList.ContainsKey(counterName))
-            {
-                if (Pdh.PdhAddCounter(_hQuery, counterName, 0, out var hCounter).Succeeded)
-                {
-                    _counterList[counterName] = hCounter;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private bool RemoveCounter(string counterName)
-        {
-            if (_counterList.TryGetValue(counterName, out var hCounter))
-            {
-                Pdh.PdhRemoveCounter(hCounter);
-            }
-            return _counterList.Remove(counterName);
-        }
-
-        private bool? Update()
+        public bool? Update()
         {
             lock (_lUpdate)
             {
@@ -154,11 +123,40 @@ namespace ReimaginedScheduling.Services.Utils
             }
         }
 
-        private readonly Pdh.SafePDH_HQUERY _hQuery;
+        private bool AddCounter(string counterName)
+        {
+            lock (_lAddC)
+            {
+                if (!_counterList.ContainsKey(counterName))
+                {
+                    if (Pdh.PdhAddCounter(_hQuery, counterName, 0, out var hCounter).Succeeded)
+                    {
+                        _counterList[counterName] = hCounter;
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
 
+        private bool RemoveCounter(string counterName)
+        {
+            lock (_lRemoveC)
+            {
+                if (_counterList.TryGetValue(counterName, out var hCounter))
+                {
+                    Pdh.PdhRemoveCounter(hCounter);
+                }
+                return _counterList.Remove(counterName);
+            }
+        }
+
+        private readonly Pdh.SafePDH_HQUERY _hQuery;
         private readonly Dictionary<string, Pdh.SafePDH_HCOUNTER> _counterList = [];
 
         private long _updateTime = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds() - 500;
+        private readonly object _lAddC = new();
+        private readonly object _lRemoveC = new();
         private readonly object _lUpdate = new();
     }
 }
