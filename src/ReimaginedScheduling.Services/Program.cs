@@ -47,7 +47,7 @@ for (var gr = new GameRules(); ; Thread.Sleep(1000))
 
     if (gr.IsGameProcess(hwnd))
     {
-        gr.AddGameProcess(hwnd);
+        gr.AttachGameProcess(hwnd);
     }
     gr.UpdateSampling();
 }

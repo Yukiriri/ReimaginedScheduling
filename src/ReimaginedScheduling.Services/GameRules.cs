@@ -1,6 +1,5 @@
 ﻿using ReimaginedScheduling.Services.Utils;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -30,18 +29,21 @@ namespace ReimaginedScheduling.Services
             }
             if (User32.GetWindowThreadProcessId(hwnd, out var pid) != 0)
             {
-                var gpuUsage = _pm.GetGPUUsage(pid);
-                var gpuMemMB = _pm.GetGPUMemUsage(pid) >> 20;
+                var gpuUsage = _performanceMonitor.GetGPUUsage(pid);
+                var gpuMemMB = _performanceMonitor.GetGPUMemUsage(pid) >> 20;
                 if (gpuUsage >= Config.GPUUsageThreshold && gpuMemMB >= Config.GPUMemUsageThreshold)
                     return true;
             }
             return false;
         }
 
-        public void AddGameProcess(HWND hwnd)
+        public void AttachGameProcess(HWND hwnd)
         {
-            if (_processDataList.Where(pd => pd.hWnd == hwnd).Any())
+            if (hwnd == _processData.hWnd)
                 return;
+            if (!_processData.hWnd.IsNull)
+                DettachGameProcess(true);
+
             var windowName = new StringBuilder(User32.GetWindowTextLength(hwnd) + 1);
             if (User32.GetWindowText(hwnd, windowName, windowName.Capacity) == 0)
             {
@@ -74,50 +76,60 @@ namespace ReimaginedScheduling.Services
             {
                 Console.WriteLine($"SetPriorityClass失败：PID={pid} Error={Win32Error.GetLastError()}");
             }
-            _processDataList.Add(new ProcessData(hwnd, hProcess, pid, exeName, windowName.ToString()));
+            _processData = new ProcessData(hwnd, hProcess, pid, exeName, windowName.ToString());
             Console.WriteLine($"+[{windowName}]");
+        }
+
+        private void DettachGameProcess(bool isRestoreProcess)
+        {
+            Console.WriteLine($"-[{_processData.WindowName}]");
+            _performanceMonitor.ClearProcessThreadMonitor(_processData.exeName, Config.MaxThreadMonitorCount);
+            if (isRestoreProcess)
+            {
+                Kernel32.SetPriorityClass(_processData.hProcess, Kernel32.CREATE_PROCESS.NORMAL_PRIORITY_CLASS);
+                Kernel32.SetProcessDefaultCpuSets(_processData.hProcess, null, 0);
+                for (int i = 0; i < _processData.LastExclusiveCores.Length; i++)
+                {
+                    var tid = _processData.LastExclusiveCores[i].TID;
+                    if (tid != 0)
+                        SetThreadCPUID(tid, null);
+                }
+            }
+            _processData.hWnd = HWND.NULL;
         }
 
         public void UpdateSampling()
         {
-            _pm.Update();
-            for (int pdi = _processDataList.Count - 1; pdi >= 0; pdi--)
+            _performanceMonitor.Update();
+            if (_processData.hWnd.IsNull)
+                return;
+            if (!User32.IsWindow(_processData.hWnd))
             {
-                var pd = _processDataList[pdi];
-                if (!User32.IsWindow(pd.hWnd))
-                {
-                    _processDataList.RemoveAt(pdi);
-                    _pm.ClearProcessThreadMonitor(pd.exeName, Config.MaxThreadMonitorCount);
-                    Console.WriteLine($"-[{pd.WindowName}]");
-                }
+                DettachGameProcess(false);
+                return;
             }
-            for (int pdi = _processDataList.Count - 1; pdi >= 0; pdi--)
-            {
-                var pd = _processDataList[pdi];
-                var thUsage = _pm.GetProcessThreadIDWithUsage(pd.exeName, pd.ThreadUsage.Length);
 
-                for (int i = 0; i < pd.ThreadUsage.Length; i++)
-                {
-                    pd.ThreadUsage[i].threadID = thUsage[i].threadID;
-                    pd.ThreadUsage[i].usage += (uint)(thUsage[i].usage / Config.ThreadSamplingCount);
-                }
-                if (++pd.SamplingCount == Config.ThreadSamplingCount)
-                {
-                    ReimagineScheduling(ref pd);
-                    pd.SamplingCount = 0;
-                    for (int i = 0; i < pd.ThreadUsage.Length; i++)
-                        pd.ThreadUsage[i] = new();
-                }
-                _processDataList[pdi] = pd;
+            var thUsage = _performanceMonitor.GetProcessThreadIDWithUsage(_processData.exeName, _processData.ThreadUsage.Length);
+            for (int i = 0; i < _processData.ThreadUsage.Length; i++)
+            {
+                _processData.ThreadUsage[i].threadID = thUsage[i].threadID;
+                _processData.ThreadUsage[i].usage += (uint)(thUsage[i].usage / Config.ThreadSamplingCount);
+            }
+            if (++_processData.SamplingCount == Config.ThreadSamplingCount)
+            {
+                ReimagineScheduling();
+                _processData.SamplingCount = 0;
+                for (int i = 0; i < _processData.ThreadUsage.Length; i++)
+                    _processData.ThreadUsage[i] = new();
             }
         }
 
-        static void ReimagineScheduling(ref ProcessData processData)
+        private void ReimagineScheduling()
         {
             if (Config.MaxExclusiveCount <= 0)
                 return;
 
-            var highLoadTh = processData.ThreadUsage
+            var highLoadTh = _processData.ThreadUsage
                 .Where(pdtu => pdtu.usage >= Config.ThreadUsageThreshold)
                 .OrderByDescending(pdtu => pdtu.usage)
                 .Where((pdtu, index) => index < Config.MaxExclusiveCount)
@@ -131,44 +143,23 @@ namespace ReimaginedScheduling.Services
                 .Where((cpuid, index) => index >= highLoadTh.Length && index < peCores.Count)
                 .ToArray();
 
-            static bool SetThreadCPUID(uint tid, uint? cpuid)
-            {
-                using var hThread = Kernel32.OpenThread((uint)(
-                    Kernel32.ThreadAccess.THREAD_SET_INFORMATION |
-                    Kernel32.ThreadAccess.THREAD_SET_LIMITED_INFORMATION |
-                    Kernel32.ThreadAccess.THREAD_QUERY_INFORMATION |
-                    Kernel32.ThreadAccess.THREAD_QUERY_LIMITED_INFORMATION), false, tid);
-                if (hThread.IsNull)
-                {
-                    Console.WriteLine($"OpenThread失败：TID={tid} Error={Win32Error.GetLastError()}");
-                    return false;
-                }
-                uint[] id = cpuid == null ? [] : [cpuid.Value];
-                if (!Kernel32.SetThreadSelectedCpuSets(hThread, id, (uint)id.Length))
-                {
-                    Console.WriteLine($"SetThreadSelectedCpuSets失败：TID={tid}");
-                    return false;
-                }
-                return true;
-            }
-
-            var beDefaultTIDList = processData.LastExclusiveCores
+            var beDefaultTIDList = _processData.LastExclusiveCores
                 .Select((lec, index) => index < exclusiveCores.Length ? (exclusiveCores.Where(ec => lec.TID == ec.TID).Any() ? 0 : lec.TID) : lec.TID)
                 .ToArray();
             if (beDefaultTIDList.Where(tid => tid != 0).Any())
             {
-                Console.Write($"{$"[{processData.WindowName}]",-30}");
+                Console.Write($"{$"[{_processData.WindowName}]",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++) Console.Write($"{"|",-13}");
                 Console.WriteLine();
 
-                Console.Write($"{$"[{processData.WindowName}]({exclusiveCores.Length}/{sharedCores.Length})",-30}");
+                Console.Write($"{$"[{_processData.WindowName}]({exclusiveCores.Length}/{sharedCores.Length})",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++)
                 {
                     var tid = beDefaultTIDList[i];
                     if (tid != 0)
                     {
                         SetThreadCPUID(tid, null);
-                        processData.LastExclusiveCores[i] = new();
+                        _processData.LastExclusiveCores[i] = new();
                         Console.Write($"{"X",-13}");
                     }
                     else
@@ -179,25 +170,19 @@ namespace ReimaginedScheduling.Services
                 Console.WriteLine();
             }
 
-            var lecs = processData.LastExclusiveCores;
             var beOverrideTIDList = exclusiveCores
-                .Select((ec, index) => ec.TID != lecs[index].TID ? ec : new())
+                .Select((ec, index) => ec.TID != _processData.LastExclusiveCores[index].TID ? ec : new())
                 .ToArray();
             var isWorthOverride = beOverrideTIDList
-                .Where((ec, index) => ec.TID != 0 && lecs[index].TID == 0)
+                .Where((ec, index) => ec.TID != 0 && _processData.LastExclusiveCores[index].TID == 0)
                 .Any();
-            //var lecUsage = processData.LastExclusiveCores
-            //    .Where((lec, index) => beOverrideTIDList[index].Usage > 0)
-            //    .Aggregate(0u, (sum, next) => sum + next.Usage) / beOverrideTIDList.Length;
-            //var ecUsage = beOverrideTIDList
-            //    .Aggregate(0u, (sum, next) => sum + next.Usage) / beOverrideTIDList.Length;
-            if (isWorthOverride /*&& Math.Abs(lecUsage - ecUsage) >= Config.ThreadUsageOffsetThreshold*/)
+            if (isWorthOverride)
             {
-                Console.Write($"{$"[{processData.WindowName}]",-30}");
+                Console.Write($"{$"[{_processData.WindowName}]",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++) Console.Write($"{"|",-13}");
                 Console.WriteLine();
 
-                Console.Write($"{$"[{processData.WindowName}]({exclusiveCores.Length}/{sharedCores.Length})",-30}");
+                Console.Write($"{$"[{_processData.WindowName}]({exclusiveCores.Length}/{sharedCores.Length})",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++)
                 {
                     if (i < beOverrideTIDList.Length && beOverrideTIDList[i].TID != 0)
@@ -209,7 +194,7 @@ namespace ReimaginedScheduling.Services
                         if (tid != 0)
                         {
                             SetThreadCPUID(tid, cpuid);
-                            processData.LastExclusiveCores[i] = otid;
+                            _processData.LastExclusiveCores[i] = otid;
                             Console.Write($"{$"{tid,-5}({usage}%)",-13}");
                         }
                     }
@@ -220,10 +205,31 @@ namespace ReimaginedScheduling.Services
                 }
                 Console.WriteLine();
             }
-            if (!Kernel32.SetProcessDefaultCpuSets(processData.hProcess, sharedCores, (uint)sharedCores.Length))
+            if (!Kernel32.SetProcessDefaultCpuSets(_processData.hProcess, sharedCores, (uint)sharedCores.Length))
             {
-                Console.WriteLine($"[{processData.WindowName}] SetProcessDefaultCpuSets失败，独占有可能被污染");
+                Console.WriteLine($"[{_processData.WindowName}] SetProcessDefaultCpuSets失败，独占有可能被污染");
             }
+        }
+
+        static bool SetThreadCPUID(uint tid, uint? cpuid)
+        {
+            using var hThread = Kernel32.OpenThread((uint)(
+                Kernel32.ThreadAccess.THREAD_SET_INFORMATION |
+                Kernel32.ThreadAccess.THREAD_SET_LIMITED_INFORMATION |
+                Kernel32.ThreadAccess.THREAD_QUERY_INFORMATION |
+                Kernel32.ThreadAccess.THREAD_QUERY_LIMITED_INFORMATION), false, tid);
+            if (hThread.IsNull)
+            {
+                Console.WriteLine($"OpenThread失败：TID={tid} Error={Win32Error.GetLastError()}");
+                return false;
+            }
+            uint[] id = cpuid == null ? [] : [cpuid.Value];
+            if (!Kernel32.SetThreadSelectedCpuSets(hThread, id, (uint)id.Length))
+            {
+                Console.WriteLine($"SetThreadSelectedCpuSets失败：TID={tid}");
+                return false;
+            }
+            return true;
         }
 
         public static bool SeDebug()
@@ -234,8 +240,8 @@ namespace ReimaginedScheduling.Services
             return hToken.HasPrivilege(SystemPrivilege.Debug);
         }
 
-        private readonly PerformanceMonitor _pm = new();
-        private readonly List<ProcessData> _processDataList = [];
+        private readonly PerformanceMonitor _performanceMonitor = new();
+        private ProcessData _processData = new();
         private RECT _deskRect = new(0, 0, 0, 0);
     }
 
