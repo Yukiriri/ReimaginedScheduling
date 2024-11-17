@@ -179,15 +179,19 @@ namespace ReimaginedScheduling.Services
                 Console.WriteLine();
             }
 
-            var beOverrideTIDList = processData.LastExclusiveCores
-                .Select((lec, index) => index < exclusiveCores.Length && lec.TID != exclusiveCores[index].TID ? exclusiveCores[index] : new())
+            var lecs = processData.LastExclusiveCores;
+            var beOverrideTIDList = exclusiveCores
+                .Select((ec, index) => ec.TID != lecs[index].TID ? ec : new())
                 .ToArray();
+            var isWorthOverride = beOverrideTIDList
+                .Where((ec, index) => ec.TID != 0 && lecs[index].TID == 0)
+                .Any();
             //var lecUsage = processData.LastExclusiveCores
             //    .Where((lec, index) => beOverrideTIDList[index].Usage > 0)
             //    .Aggregate(0u, (sum, next) => sum + next.Usage) / beOverrideTIDList.Length;
             //var ecUsage = beOverrideTIDList
             //    .Aggregate(0u, (sum, next) => sum + next.Usage) / beOverrideTIDList.Length;
-            if (beOverrideTIDList.Where(tid => tid.TID != 0).Any() /*&& Math.Abs(lecUsage - ecUsage) >= Config.ThreadUsageOffsetThreshold*/)
+            if (isWorthOverride /*&& Math.Abs(lecUsage - ecUsage) >= Config.ThreadUsageOffsetThreshold*/)
             {
                 Console.Write($"{$"[{processData.WindowName}]",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++) Console.Write($"{"|",-13}");
@@ -196,15 +200,18 @@ namespace ReimaginedScheduling.Services
                 Console.Write($"{$"[{processData.WindowName}]({exclusiveCores.Length}/{sharedCores.Length})",-30}");
                 for (int i = 0; i < Config.MaxExclusiveCount; i++)
                 {
-                    var otid = beOverrideTIDList[i];
-                    var cpuid = otid.CPUID;
-                    var tid = otid.TID;
-                    var usage = otid.Usage;
-                    if (tid != 0)
+                    if (i < beOverrideTIDList.Length && beOverrideTIDList[i].TID != 0)
                     {
-                        SetThreadCPUID(tid, cpuid);
-                        processData.LastExclusiveCores[i] = otid;
-                        Console.Write($"{$"{tid,-5}({usage}%)",-13}");
+                        var otid = beOverrideTIDList[i];
+                        var cpuid = otid.CPUID;
+                        var tid = otid.TID;
+                        var usage = otid.Usage;
+                        if (tid != 0)
+                        {
+                            SetThreadCPUID(tid, cpuid);
+                            processData.LastExclusiveCores[i] = otid;
+                            Console.Write($"{$"{tid,-5}({usage}%)",-13}");
+                        }
                     }
                     else
                     {
