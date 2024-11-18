@@ -1,6 +1,5 @@
 ﻿using ReimaginedScheduling.Services.Utils;
 using System;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Vanara.PInvoke;
@@ -13,9 +12,6 @@ namespace ReimaginedScheduling.Services
         public GameRules()
         {
             User32.GetWindowRect(User32.GetDesktopWindow(), out _deskRect);
-            Console.Write($"{"Name",-30}");
-            foreach (var cpuid in CPUSetInfo.PhysicalPCoreList.Take(Config.MaxExclusiveCount)) Console.Write($"{$"CPU{cpuid - CPUSetInfo.BeginCPUID}",-13}");
-            Console.WriteLine();
         }
 
         public bool IsGameProcess(HWND hwnd)
@@ -78,21 +74,22 @@ namespace ReimaginedScheduling.Services
             }
             _processData = new ProcessData(hwnd, hProcess, pid, exeName, windowName.ToString());
             Console.WriteLine($"+[{windowName}]");
+            _processData.ThreadManager.WriteLineCPUID();
         }
 
         private void DettachGameProcess(bool isRestoreProcess)
         {
             Console.WriteLine($"-[{_processData.WindowName}]");
-            _performanceMonitor.ClearProcessThreadMonitor(_processData.exeName, Config.MaxThreadMonitorCount);
+            Console.WriteLine(Config.ConsoleSplitRow);
+            _performanceMonitor.ClearProcessThreadMonitor(_processData.exeName, _processData.ThreadUsage.Length);
             if (isRestoreProcess)
             {
                 Kernel32.SetPriorityClass(_processData.hProcess, Kernel32.CREATE_PROCESS.NORMAL_PRIORITY_CLASS);
                 Kernel32.SetProcessDefaultCpuSets(_processData.hProcess, null, 0);
-                for (int i = 0; i < _processData.LastExclusiveCores.Length; i++)
+                foreach (var ca in _processData.ThreadManager.CurrentAttribution)
                 {
-                    var tid = _processData.LastExclusiveCores[i].TID;
-                    if (tid != 0)
-                        SetThreadCPUID(tid, null);
+                    if (!ca.IsNull)
+                        SetThreadCPUID((uint)ca.TID, null);
                 }
             }
             _processData.hWnd = HWND.NULL;
@@ -112,8 +109,8 @@ namespace ReimaginedScheduling.Services
             var thUsage = _performanceMonitor.GetProcessThreadIDWithUsage(_processData.exeName, _processData.ThreadUsage.Length);
             for (int i = 0; i < _processData.ThreadUsage.Length; i++)
             {
-                _processData.ThreadUsage[i].threadID = thUsage[i].threadID;
-                _processData.ThreadUsage[i].usage += (uint)(thUsage[i].usage / Config.ThreadSamplingCount);
+                _processData.ThreadUsage[i].ThreadID = thUsage[i].ThreadID;
+                _processData.ThreadUsage[i].Usage += thUsage[i].Usage / Config.ThreadSamplingCount;
             }
             if (++_processData.SamplingCount == Config.ThreadSamplingCount)
             {
@@ -126,86 +123,32 @@ namespace ReimaginedScheduling.Services
 
         private void ReimagineScheduling()
         {
-            if (Config.MaxExclusiveCount <= 0)
+            ref var manager = ref _processData.ThreadManager;
+            if (manager.AvailablePCoreCount <= 0)
                 return;
 
-            var highLoadTh = _processData.ThreadUsage
-                .Where(pdtu => pdtu.usage >= Config.ThreadUsageThreshold)
-                .OrderByDescending(pdtu => pdtu.usage)
-                .Where((pdtu, index) => index < Config.MaxExclusiveCount)
-                .ToArray();
-            var peCores = CPUSetInfo.PhysicalPECoreList;
-            var exclusiveCores = peCores
-                .Where((cpuid, index) => index < highLoadTh.Length)
-                .Select((cpuid, index) => new ExclusiveCore(cpuid, highLoadTh[index].threadID, highLoadTh[index].usage))
-                .ToArray();
-            var sharedCores = peCores
-                .Where((cpuid, index) => index >= highLoadTh.Length && index < peCores.Count)
-                .ToArray();
-
-            var beDefaultTIDList = _processData.LastExclusiveCores
-                .Select((lec, index) => index < exclusiveCores.Length ? (exclusiveCores.Where(ec => lec.TID == ec.TID).Any() ? 0 : lec.TID) : lec.TID)
-                .ToArray();
-            if (beDefaultTIDList.Where(tid => tid != 0).Any())
+            manager.Append(_processData.ThreadUsage);
+            if (manager.IsNeedUpdate)
             {
-                Console.Write($"{$"[{_processData.WindowName}]",-30}");
-                for (int i = 0; i < Config.MaxExclusiveCount; i++) Console.Write($"{"|",-13}");
-                Console.WriteLine();
-
-                Console.Write($"{$"[{_processData.WindowName}]({exclusiveCores.Length}/{sharedCores.Length})",-30}");
-                for (int i = 0; i < Config.MaxExclusiveCount; i++)
+                manager.WriteLineThreadMap();
+                if (manager.IsNeedRestore)
                 {
-                    var tid = beDefaultTIDList[i];
-                    if (tid != 0)
+                    foreach (var crt in manager.CurrentRestoreThreads)
                     {
-                        SetThreadCPUID(tid, null);
-                        _processData.LastExclusiveCores[i] = new();
-                        Console.Write($"{"X",-13}");
-                    }
-                    else
-                    {
-                        Console.Write($"{"|",-13}");
+                        if (!crt.IsNull)
+                            SetThreadCPUID((uint)crt.TID, null);
                     }
                 }
-                Console.WriteLine();
-            }
-
-            var beOverrideTIDList = exclusiveCores
-                .Select((ec, index) => ec.TID != _processData.LastExclusiveCores[index].TID ? ec : new())
-                .ToArray();
-            var isWorthOverride = beOverrideTIDList
-                .Where((ec, index) => ec.TID != 0 && _processData.LastExclusiveCores[index].TID == 0)
-                .Any();
-            if (isWorthOverride)
-            {
-                Console.Write($"{$"[{_processData.WindowName}]",-30}");
-                for (int i = 0; i < Config.MaxExclusiveCount; i++) Console.Write($"{"|",-13}");
-                Console.WriteLine();
-
-                Console.Write($"{$"[{_processData.WindowName}]({exclusiveCores.Length}/{sharedCores.Length})",-30}");
-                for (int i = 0; i < Config.MaxExclusiveCount; i++)
+                if (manager.IsNeedOverride)
                 {
-                    if (i < beOverrideTIDList.Length && beOverrideTIDList[i].TID != 0)
+                    foreach (var cot in manager.CurrentOverrideThreads)
                     {
-                        var otid = beOverrideTIDList[i];
-                        var cpuid = otid.CPUID;
-                        var tid = otid.TID;
-                        var usage = otid.Usage;
-                        if (tid != 0)
-                        {
-                            SetThreadCPUID(tid, cpuid);
-                            _processData.LastExclusiveCores[i] = otid;
-                            Console.Write($"{$"{tid,-5}({usage}%)",-13}");
-                        }
-                    }
-                    else
-                    {
-                        Console.Write($"{"|",-13}");
+                        if (!cot.IsNull)
+                            SetThreadCPUID((uint)cot.TID, cot.CPUID);
                     }
                 }
-                Console.WriteLine();
             }
-            if (!Kernel32.SetProcessDefaultCpuSets(_processData.hProcess, sharedCores, (uint)sharedCores.Length))
+            if (!Kernel32.SetProcessDefaultCpuSets(_processData.hProcess, manager.CurrentSharedCores, (uint)manager.CurrentSharedCores.Length))
             {
                 Console.WriteLine($"[{_processData.WindowName}] SetProcessDefaultCpuSets失败，独占有可能被污染");
             }
@@ -213,6 +156,8 @@ namespace ReimaginedScheduling.Services
 
         static bool SetThreadCPUID(uint tid, uint? cpuid)
         {
+            if (tid == 0)
+                return false;
             using var hThread = Kernel32.OpenThread((uint)(
                 Kernel32.ThreadAccess.THREAD_SET_INFORMATION |
                 Kernel32.ThreadAccess.THREAD_SET_LIMITED_INFORMATION |
@@ -240,29 +185,22 @@ namespace ReimaginedScheduling.Services
             return hToken.HasPrivilege(SystemPrivilege.Debug);
         }
 
+        struct ProcessData(HWND hWnd, Kernel32.SafeHPROCESS hProcess, uint PID, string exeName, string windowName)
+        {
+            public HWND hWnd = hWnd;
+            public string WindowName = windowName;
+            public Kernel32.SafeHPROCESS hProcess = hProcess;
+            public uint PID = PID;
+            public string exeName = exeName;
+
+            public PerformanceMonitor.ProcessThreadIDWithUsage[] ThreadUsage = new PerformanceMonitor.ProcessThreadIDWithUsage[Config.ThreadMonitorCount];
+            public int SamplingCount = 0;
+
+            public GameThreadManager ThreadManager = new();
+        }
+
         private readonly PerformanceMonitor _performanceMonitor = new();
         private ProcessData _processData = new();
         private RECT _deskRect = new(0, 0, 0, 0);
-    }
-
-    struct ProcessData(HWND hWnd, Kernel32.SafeHPROCESS hProcess, uint PID, string exeName, string windowName)
-    {
-        public HWND hWnd = hWnd;
-        public string WindowName = windowName;
-        public Kernel32.SafeHPROCESS hProcess = hProcess;
-        public uint PID = PID;
-        public string exeName = exeName;
-
-        public (uint threadID, uint usage)[] ThreadUsage = new (uint, uint)[Config.MaxThreadMonitorCount];
-        public int SamplingCount = 0;
-
-        public ExclusiveCore[] LastExclusiveCores = new ExclusiveCore[Config.MaxExclusiveCount];
-    }
-
-    struct ExclusiveCore(uint CPUID, uint TID, uint Usage)
-    {
-        public uint CPUID = CPUID;
-        public uint TID = TID;
-        public uint Usage = Usage;
     }
 }

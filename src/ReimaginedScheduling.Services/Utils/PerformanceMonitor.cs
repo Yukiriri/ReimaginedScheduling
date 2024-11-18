@@ -51,29 +51,38 @@ namespace ReimaginedScheduling.Services.Utils
                 .Aggregate(0ul, (sum, next) => sum + (ulong)next.value.largeValue);
         }
 
-        public (uint instanceID, double usage)[] GetProcessThreadUsage(string processName, int maxThread)
+        public ProcessThreadUsage[] GetProcessThreadUsage(string processName, int maxThread)
         {
-            var value = new (uint instanceID, double usage)[maxThread];
+            var value = new ProcessThreadUsage[maxThread];
             for (int i = 0; i < maxThread; i++)
-                value[i] = ((uint)i, GetCounterValue($"""\Thread({processName}/{i})\% Processor Time""", Pdh.PDH_FMT.PDH_FMT_DOUBLE).DefaultIfEmpty().First().value.doubleValue);
+            {
+                value[i].InstanceID = (uint)i;
+                value[i].Usage = GetCounterValue($"""\Thread({processName}/{i})\% Processor Time""", Pdh.PDH_FMT.PDH_FMT_DOUBLE).DefaultIfEmpty().First().value.doubleValue;
+            }
             return value;
         }
 
-        public (uint instanceID, uint threadID)[] GetProcessThreadID(string processName, int maxThread)
+        public ProcessThreadID[] GetProcessThreadID(string processName, int maxThread)
         {
-            var value = new (uint instanceID, uint threadID)[maxThread];
+            var value = new ProcessThreadID[maxThread];
             for (int i = 0; i < maxThread; i++)
-                value[i] = ((uint)i, (uint)GetCounterValue($"""\Thread({processName}/{i})\ID Thread""", Pdh.PDH_FMT.PDH_FMT_LONG).DefaultIfEmpty().First().value.longValue);
+            {
+                value[i].InstanceID = (uint)i;
+                value[i].ThreadID = (uint)GetCounterValue($"""\Thread({processName}/{i})\ID Thread""", Pdh.PDH_FMT.PDH_FMT_LONG).DefaultIfEmpty().First().value.longValue;
+            }
             return value;
         }
 
-        public (uint threadID, double usage)[] GetProcessThreadIDWithUsage(string processName, int maxThread)
+        public ProcessThreadIDWithUsage[] GetProcessThreadIDWithUsage(string processName, int maxThread)
         {
             var thu = GetProcessThreadUsage(processName, maxThread);
             var thid = GetProcessThreadID(processName, maxThread);
-            var value = new (uint threadID, double usage)[maxThread];
+            var value = new ProcessThreadIDWithUsage[maxThread];
             for (int i = 0; i < maxThread; i++)
-                value[i] = (thid[i].threadID,  thu[i].usage);
+            {
+                value[i].ThreadID = thid[i].ThreadID;
+                value[i].Usage = thu[i].Usage;
+            }
             return value;
         }
 
@@ -151,9 +160,24 @@ namespace ReimaginedScheduling.Services.Utils
             }
         }
 
+        public struct ProcessThreadUsage(uint InstanceID, double Usage)
+        {
+            public uint InstanceID = InstanceID;
+            public double Usage = Usage;
+        }
+        public struct ProcessThreadID(uint InstanceID, uint ThreadID)
+        {
+            public uint InstanceID = InstanceID;
+            public uint ThreadID = ThreadID;
+        }
+        public struct ProcessThreadIDWithUsage(uint ThreadID, double Usage)
+        {
+            public uint ThreadID = ThreadID;
+            public double Usage = Usage;
+        }
+
         private readonly Pdh.SafePDH_HQUERY _hQuery;
         private readonly Dictionary<string, Pdh.SafePDH_HCOUNTER> _counterList = [];
-
         private long _updateTime = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds() - 500;
         private readonly object _lAddC = new();
         private readonly object _lRemoveC = new();
