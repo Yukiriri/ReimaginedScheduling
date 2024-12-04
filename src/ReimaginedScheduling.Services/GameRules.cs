@@ -96,7 +96,7 @@ public class GameRules
         _performanceMonitor.Update();
         if (_processData.hWnd.IsNull)
         {
-            Console.Write("等待前台游戏");
+            Console.Write("\r等待前台游戏");
             return;
         }
         if (!User32.IsWindow(_processData.hWnd))
@@ -161,7 +161,7 @@ public class GameRules
 
     static void ClearConsole()
     {
-        #if !DEBUG
+        #if RELEASE
         Console.SetCursorPosition(0, 0);
         Console.WriteLine(new string(' ', Console.WindowWidth * Console.WindowHeight));
         Console.SetCursorPosition(0, 0);

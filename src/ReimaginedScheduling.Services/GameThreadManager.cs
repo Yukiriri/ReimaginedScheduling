@@ -61,7 +61,7 @@ public class GameThreadManager
             CurrentPerAttribution = new List<ThreadAttribution>[AvailablePCoreCount];
             for (int i = 0; i < AvailablePCoreCount; i++)
                 CurrentPerAttribution[i] = [];
-            for (int i = 0; i < CurrentAttribution.Length; i++)
+            for (int i = 0; i < 1; i++)
             {
                 var cpuid = GetPPCoreID(i);
                 var coreIndex = (cpuid - CPUSetInfo.BeginCPUID) / 2;
@@ -70,7 +70,7 @@ public class GameThreadManager
 
                 CurrentPerAttribution[coreIndex].Add(new ThreadAttribution(th.InstanceID, th.TID, cpuid, th.Usage));
             }
-            CurrentSharedCores = ((CPUSetInfo.IsPCoreOnly && AvailablePCoreCount == MaxAvailablePCoreCount) ? CPUSetInfo.HyperThreadList : CPUSetInfo.PhysicalPECoreList)
+            CurrentSharedCores = CPUSetInfo.PhysicalPECoreList
                 .Where((cpuid, index) => index > 0)
                 .ToArray();
             return true;
