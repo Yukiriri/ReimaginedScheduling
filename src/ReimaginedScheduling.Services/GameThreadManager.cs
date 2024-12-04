@@ -1,152 +1,111 @@
 ﻿using ReimaginedScheduling.Services.Utils;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
-namespace ReimaginedScheduling.Services
+namespace ReimaginedScheduling.Services;
+
+public class GameThreadManager
 {
-    public class GameThreadManager
+    public ThreadAttribution[] CurrentAttribution { get; private set; } = [];
+    public List<ThreadAttribution>[] CurrentPerAttribution { get; private set; } = [];
+    public uint[] CurrentSharedCores { get; private set; } = [];
+    public int AvailablePCoreCount { get; private set; } = 0;
+    public int MaxAvailablePCoreCount { get; private set; } = 0;
+    public struct ThreadAttribution(uint InstanceID, uint TID, uint CPUID, double Usage)
     {
-        public GameThreadManager()
+        public uint InstanceID = InstanceID;
+        public uint TID = TID;
+        public uint CPUID = CPUID;
+        public double Usage = Usage;
+        public bool IsNull => TID == 0;
+        public bool IsNotNull => TID != 0;
+    }
+
+    public GameThreadManager()
+    {
+        MaxAvailablePCoreCount = CPUSetInfo.PhysicalPCoreList.Count;
+        AvailablePCoreCount = MaxAvailablePCoreCount;
+        if (CPUSetInfo.IsPCoreOnly && AvailablePCoreCount > Config.TypicalPCoreCount)
+            AvailablePCoreCount = Math.Min(AvailablePCoreCount / 2, Config.MaxTypicalPCoreCount);
+    }
+
+    private uint GetPPCoreID(int index)
+    {
+        int nextIndex = 0;
+        if (index > 0)
         {
-            MaxAvailablePCoreCount = CPUSetInfo.PhysicalPCoreList.Count;
-            AvailablePCoreCount = MaxAvailablePCoreCount;
-            if (CPUSetInfo.IsPCoreOnly && AvailablePCoreCount > Config.TypicalPCoreCount)
-                AvailablePCoreCount /= 2;
-            CurrentAttribution = new ThreadAttribution[AvailablePCoreCount];
+            nextIndex = (1 + ((index - 1) % (MaxAvailablePCoreCount - 1))) % MaxAvailablePCoreCount;
+        }
+        return CPUSetInfo.PhysicalPCoreList[nextIndex];
+    }
+
+    public bool Update(PerformanceMonitor.ProcessThreadIDWithUsage[] threads)
+    {
+        var filteredTh = threads
+            // .Where(th => th.ThreadID != 0)
+            .Select(th => new ThreadAttribution(th.InstanceID, th.ThreadID, 0, th.Usage))
+            .ToArray();
+        
+        #if DEBUG
+        var logContent = "[";
+        foreach (var th in filteredTh)
+            logContent += $"new({th.InstanceID,-3},{th.TID,-5},{th.Usage:F0}), ";
+        logContent += "],";
+        MyLogger.Debug(logContent);
+        #endif
+
+        if (filteredTh.Length != 0)
+        {
+            CurrentAttribution = filteredTh;
+            CurrentPerAttribution = new List<ThreadAttribution>[AvailablePCoreCount];
+            for (int i = 0; i < AvailablePCoreCount; i++)
+                CurrentPerAttribution[i] = [];
             for (int i = 0; i < CurrentAttribution.Length; i++)
-                CurrentAttribution[i] = new();
-        }
+            {
+                var cpuid = GetPPCoreID(i);
+                var coreIndex = (cpuid - CPUSetInfo.BeginCPUID) / 2;
+                CurrentAttribution[i].CPUID = cpuid;
+                var th = CurrentAttribution[i];
 
-        public void Append(PerformanceMonitor.ProcessThreadIDWithUsage[] threads)
-        {
-            var newAttribution = threads
-                .Where(th => th.Usage >= Config.ThreadUsageThreshold)
-                .OrderByDescending(th => th.Usage)
-                .Where((th, index) => index < AvailablePCoreCount)
-                .Select((th, index) => new ThreadAttribution((int)th.ThreadID, CPUSetInfo.PhysicalPCoreList[index], th.Usage))
+                CurrentPerAttribution[coreIndex].Add(new ThreadAttribution(th.InstanceID, th.TID, cpuid, th.Usage));
+            }
+            CurrentSharedCores = ((CPUSetInfo.IsPCoreOnly && AvailablePCoreCount == MaxAvailablePCoreCount) ? CPUSetInfo.HyperThreadList : CPUSetInfo.PhysicalPECoreList)
+                .Where((cpuid, index) => index > 0)
                 .ToArray();
-            IsNeedUpdate = CurrentAttribution[0].TID != newAttribution[0].TID;
-            if (IsNeedUpdate)
-            {
-                CurrentRestoreThreads = CurrentAttribution
-                    .Select((ca, index) => ((index < newAttribution.Length && !newAttribution.Where(na => ca.TID == na.TID).Any()) || (index >= newAttribution.Length)) ? ca : new())
-                    .ToArray();
-                IsNeedRestore = CurrentRestoreThreads.Where(tid => !tid.IsNull).Any();
-                CurrentOverrideThreads = CurrentAttribution
-                    .Select((ca, index) => (index < newAttribution.Length && ca.TID != newAttribution[index].TID) ? newAttribution[index] : new())
-                    .ToArray();
-                IsNeedOverride = CurrentOverrideThreads.Where(tid => !tid.IsNull).Any();
-                CurrentAttribution = CurrentAttribution
-                    .Select((ca, index) => index < newAttribution.Length ? newAttribution[index] : new())
-                    .ToArray();
-            }
-            else
-            {
-                CurrentRestoreThreads = [];
-                IsNeedRestore = false;
-                CurrentOverrideThreads = [];
-                IsNeedOverride = false;
-            }
-            if (CPUSetInfo.IsPCoreOnly && AvailablePCoreCount == MaxAvailablePCoreCount)
-            {
-                CurrentSharedCores = CPUSetInfo.HyperThreadList
-                    .Where((cpuid, index) => (index < newAttribution.Length && newAttribution[index].Usage < Config.ThreadExclusiveThreshold) || (index >= newAttribution.Length))
-                    .ToArray();
-            }
-            else
-            {
-                CurrentSharedCores = CPUSetInfo.PhysicalPECoreList
-                    .Where((cpuid, index) => (index < newAttribution.Length && newAttribution[index].Usage < Config.ThreadExclusiveThreshold) || (index >= newAttribution.Length))
-                    .ToArray();
-            }
+            return true;
         }
+        return false;
+    }
 
-        public void WriteLineCPUID()
-        {
-            for (int i = 0; i < AvailablePCoreCount; i++)
-                Console.Write($"{$"CPU{i * 2}",-7}");
-            Console.WriteLine();
-        }
+    public override string ToString()
+    {
+        var s = "\n";
+        for (int i = 0; i < AvailablePCoreCount; i++)
+            s += $"{$"CPU{i * 2}",-12}";
+        if (CurrentSharedCores.Length != 0)
+            s += $"/ {CurrentSharedCores.First() - CPUSetInfo.BeginCPUID}-{CurrentSharedCores.Last() - CPUSetInfo.BeginCPUID} ({CurrentSharedCores.Length})";
 
-        private void WriteLineSplit()
+        s += $"\n{Config.ConsoleSplitRow}\n";
+        
+        for (int row = 0, maxRow = CurrentPerAttribution.Aggregate(0, (max, next) => Math.Max(max, next.Count)); row < maxRow; row++)
         {
-            for (int i = 0; i < AvailablePCoreCount; i++)
-                Console.Write($"{"|",-7}");
-            Console.WriteLine();
-        }
-
-        private void WriteCurrentAttribution()
-        {
-            foreach (var ca in CurrentAttribution)
-                Console.Write($"{ca.TID,-7}");
-        }
-
-        private void WriteCurrentSharedCores()
-        {
-            Console.Write($"{CurrentSharedCores.First() - CPUSetInfo.BeginCPUID}-");
-            Console.Write($"{CurrentSharedCores.Last() - CPUSetInfo.BeginCPUID}");
-            Console.Write($"({CurrentSharedCores.Length})");
-        }
-
-        private void WriteFillThreadSplit(ThreadAttribution[] threads, string fill = "")
-        {
-            for (int i = 0; i < AvailablePCoreCount; i++)
+            for (int col = 0; col < AvailablePCoreCount; col++)
             {
-                var th = threads[i];
-                if (!th.IsNull)
-                    Console.Write($"{(fill.Length > 0 ? fill : th.TID),-7}");
+                if (row < CurrentPerAttribution[col].Count)
+                {
+                    var th = CurrentPerAttribution[col][row];
+                    s += $"{$"{th.TID,-5}({th.Usage:F0}%)",-12}";
+                }
                 else
-                    Console.Write($"{"|",-7}");
+                {
+                    s += $"{"",-12}";
+                }
             }
+            s += "\n";
         }
+        s += "\n";
 
-        public void WriteLineThreadMap()
-        {
-            if (IsNeedRestore)
-            {
-                WriteLineSplit();
-                WriteFillThreadSplit(CurrentRestoreThreads, "X");
-            }
-            if (IsNeedOverride)
-            {
-                if (IsNeedRestore)
-                    Console.WriteLine();
-                WriteLineSplit();
-                WriteFillThreadSplit(CurrentOverrideThreads);
-            }
-            if (IsNeedRestore || IsNeedOverride)
-            {
-                WriteCurrentAttribution();
-                WriteCurrentSharedCores();
-                Console.WriteLine();
-            }
-        }
-
-        public struct ThreadAttribution
-        {
-            public int TID = -1;
-            public uint CPUID = 0;
-            public double Usage = 0;
-            public bool IsNull => TID == -1;
-
-            public ThreadAttribution() { }
-            public ThreadAttribution(int TID, uint CPUID, double Usage)
-            {
-                this.TID = TID;
-                this.CPUID = CPUID;
-                this.Usage = Usage;
-            }
-        }
-
-        public ThreadAttribution[] CurrentAttribution { get; private set; } = [];
-        public bool IsNeedUpdate { get; private set; } = false;
-        public ThreadAttribution[] CurrentRestoreThreads { get; private set; } = [];
-        public bool IsNeedRestore { get; private set; } = false;
-        public ThreadAttribution[] CurrentOverrideThreads { get; private set; } = [];
-        public bool IsNeedOverride { get; private set; } = false;
-        public uint[] CurrentSharedCores { get; private set; } = [];
-        public int AvailablePCoreCount { get; private set; } = 0;
-
-        private readonly int MaxAvailablePCoreCount = 0;
+        return s;
     }
 }
