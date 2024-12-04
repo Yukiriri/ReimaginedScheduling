@@ -2,19 +2,6 @@
 
 [![Banner](https://socialify.git.ci/Yukiriri/ReimaginedScheduling/image?description=1&language=1&name=1&owner=1&pattern=Circuit%20Board&theme=Auto)]()
 
-[![Stars](https://img.shields.io/github/stars/Yukiriri/ReimaginedScheduling?style=for-the-badge)](
-    https://github.com/Yukiriri/ReimaginedScheduling/stargazers
-)
-[![Forks](https://img.shields.io/github/forks/Yukiriri/ReimaginedScheduling?style=for-the-badge)](
-    https://github.com/Yukiriri/ReimaginedScheduling/forks
-)
-[![Issues](https://img.shields.io/github/issues/Yukiriri/ReimaginedScheduling?style=for-the-badge)](
-    https://github.com/Yukiriri/ReimaginedScheduling/issues
-)
-[![Pull](https://img.shields.io/github/issues-pr/Yukiriri/ReimaginedScheduling?style=for-the-badge)](
-    https://github.com/Yukiriri/ReimaginedScheduling/pulls
-)
-
 [![Build](https://img.shields.io/github/actions/workflow/status/Yukiriri/ReimaginedScheduling/build.yml?style=for-the-badge)](
     https://github.com/Yukiriri/ReimaginedScheduling/actions/workflows/build.yml
 )
@@ -64,8 +51,8 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
             关掉后会将所有核心的性能上限同步为最雷的核心的上限  
             打开`Windows事件查看器`，筛选`Kernel-Processor-Power`事件，也可以看见变化  
         - ### Global C State
-            ### 建议关闭
-            这个选项会影响多数软件计算CPU的正确占用率  
+            ### 建议保持Auto
+            如果启用这个选项会影响软件计算CPU的正确占用率，那就关闭  
     - ## 电源计划注意项
         不要再尝试 `最小放置核心50%` + `SMT循环` 的组合  
         这个组合搭配我的程序会让Windows水土不服  

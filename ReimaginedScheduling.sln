@@ -9,14 +9,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReimaginedScheduling.Servic
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x64 = Debug|x64
-		Release|x64 = Release|x64
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Debug|x64.Build.0 = Debug|Any CPU
-		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Release|x64.ActiveCfg = Release|Any CPU
-		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Release|x64.Build.0 = Release|Any CPU
+		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C42A7A49-159E-4E08-9720-82F338F6C8FF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
