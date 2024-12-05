@@ -44,6 +44,7 @@ public class GameThreadManager
     {
         var filteredTh = threads
             // .Where(th => th.ThreadID != 0)
+            .Where((th, index) => index < 1)
             .Select(th => new ThreadAttribution(th.InstanceID, th.ThreadID, 0, th.Usage))
             .ToArray();
         
@@ -61,7 +62,7 @@ public class GameThreadManager
             CurrentPerAttribution = new List<ThreadAttribution>[AvailablePCoreCount];
             for (int i = 0; i < AvailablePCoreCount; i++)
                 CurrentPerAttribution[i] = [];
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < CurrentAttribution.Length; i++)
             {
                 var cpuid = GetPPCoreID(i);
                 var coreIndex = (cpuid - CPUSetInfo.BeginCPUID) / 2;
