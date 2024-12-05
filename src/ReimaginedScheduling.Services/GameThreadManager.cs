@@ -71,7 +71,7 @@ public class GameThreadManager
                 CurrentPerAttribution[coreIndex].Add(new ThreadAttribution(th.InstanceID, th.TID, cpuid, th.Usage));
             }
             CurrentSharedCores = CPUSetInfo.PhysicalPECoreList
-                .Where((cpuid, index) => index > 0)
+                .Where((cpuid, index) => index > 0 && index < AvailablePCoreCount)
                 .ToArray();
             return true;
         }
