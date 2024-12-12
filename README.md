@@ -1,6 +1,6 @@
 <div align="center">
 
-[![Banner](https://socialify.git.ci/Yukiriri/ReimaginedScheduling/image?description=1&language=1&name=1&owner=1&pattern=Circuit%20Board&theme=Auto)]()
+[![Banner](./md/logo-118589293_p02.png)]()
 
 [![Build](https://img.shields.io/github/actions/workflow/status/Yukiriri/ReimaginedScheduling/build.yml?style=for-the-badge)](
   https://github.com/Yukiriri/ReimaginedScheduling/actions/workflows/build.yml
