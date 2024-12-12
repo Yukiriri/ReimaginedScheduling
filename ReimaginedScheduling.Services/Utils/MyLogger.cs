@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace ReimaginedScheduling.Services;
+namespace ReimaginedScheduling.Services.Utils;
 
 public class MyLogger
 {
@@ -17,7 +17,7 @@ public class MyLogger
         Debug(message);
     }
 
-    private static string NextLoggerTime() => $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
+    private static string NextLoggerTime() => $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}";
 
     private static readonly StreamWriter _logger = new($"ReimagedScheduling.log");
 }
