@@ -1,2 +1,2 @@
-dotnet publish -c Release -p win-x64
+dotnet publish -c Release
 pause

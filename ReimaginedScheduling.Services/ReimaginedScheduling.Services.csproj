@@ -10,8 +10,10 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <PublishSelfContained>true</PublishSelfContained>
+    
     <!-- <PublishSingleFile>true</PublishSingleFile> -->
     <PublishAot>true</PublishAot>
+    <PlatformTarget>x64</PlatformTarget>
     <OptimizationPreference>Speed</OptimizationPreference>
   </PropertyGroup>
 

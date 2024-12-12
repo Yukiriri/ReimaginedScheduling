@@ -41,7 +41,7 @@ jobs:
 
       - name: Run build
         run: |
-          dotnet publish -c Release -p win-x64
+          dotnet publish -c Release
 
       - name: Create new release
         uses: ncipollo/release-action@v1
