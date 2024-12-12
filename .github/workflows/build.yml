@@ -15,7 +15,6 @@ jobs:
     runs-on: windows-latest
     env:
       DOTNET_INSTALL_DIR: ./.dotnet-sdk
-      MSVC_INSTALL_DIR: ./.msvc
 
     steps:
       - name: Checkout
