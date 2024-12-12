@@ -1,4 +1,6 @@
-dev/**
 .vs/**
+.vscode/**
+dev/**
 bin/**
-src/*/obj/**
+ReimaginedScheduling*/bin/**
+ReimaginedScheduling*/obj/**
