@@ -1,0 +1,2 @@
+dotnet clean
+pause
