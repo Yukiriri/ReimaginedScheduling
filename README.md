@@ -9,42 +9,34 @@
 
 [Release]: https://github.com/Yukiriri/ReimaginedScheduling/releases
 
-通过观测前台游戏的线程负载，重新规划线程分配，让高负载主线程独占核心，从而使用完整的单核性能，帮助高端CPU更上一层楼。  
+通过读取前台游戏的线程信息，重新规划线程分配，让重要线程适当独占核心，从而使用完整的单核性能，帮助高端CPU更上一层楼。  
 Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安心玩游戏。  
 由于我拥有的硬件和游戏有限，目前已涵盖范围还比较少，期待能和大家一起完善，如果在特定情况遇到问题或者有建议，欢迎提出。  
 
 </div>
 
 > [!IMPORTANT]  
-> 如果出现这条提示，就说明项目正在完全重新计划，近期的新构建将是空壳蓝图版本，不带任何有效功能  
-> 先重点看readme的实现合理性  
+> 如果出现这条提示，就说明项目正在完全重新计划，近期的构建将是空壳蓝图版本，不带任何有效功能  
+> 先重点看readme的实现合理性，不需要管Release构建  
 
 # 实现原理
-- ## 运行流程
-  ```mermaid
-  graph LR;
-    开始-->A[判断前台进程]-->B{符合游戏占用};
-    B--否-->A;
-    B--是-->统计线程信息-->安插线程新分布-->A;
-  ```
 - ## 线程分布方式
-  - ## UE引擎游戏
-    <table>
-    <tr><th></th>           <th>GameThread</th><th>RenderThread</th><th>RHIThread</th><th>Foreground Worker</th><th>其他</th></tr>
-    <tr><th>8x2大核</th>     <td>核1</td>       <td>核2</td>         <td>核3</td>      <td>核4-8</td>            <td>核9-16</td></tr>
-    <tr><th>6x2大核</th>     <td>核1</td>       <td>核2</td>         <td>核3</td>      <td>核4-6</td>            <td>核7-12</td></tr>
-    <tr><th>10大核</th>      <td>核1</td>       <td>核2</td>         <td>核3</td>      <td>核4-6</td>            <td>核7-10</td></tr>
-    <tr><th>8大核大小核</th> <td>P核1</td>      <td>P核2</td>        <td>P核3</td>     <td>P核4-8</td>            <td>全E核</td></tr>
-    <tr><th>8大核</th>       <td>核1</td>       <td>核2</td>         <td>核3</td>      <td>核4-6</td>            <td>核7-8 + 超线程</td></tr>
-    <tr><th>6大核大小核</th> <td>P核1</td>      <td>P核2</td>        <td>P核3</td>     <td>P核4-6</td>            <td>全E核</td></tr>
-    <tr><th>6大核</th>       <td>核1</td>       <td>核2</td>         <td colspan="3">核3-6 + 超线程</td></tr>
-    <tr><th>4大核大小核</th> <td>P核1</td>      <td>P核2</td>        <td colspan="3">P核3-4 + 超线程 + 全E核</td></tr>
-    <tr><th>4大核</th>       <td>核1</td>       <td colspan="4">核2-4 + 超线程</td></tr>
-    </table>
+  - ## UE和Unity游戏
+    ||GameThread|RenderThread|RHIThread / GfxDevicesThread|Foreground Worker / Pool|其他|
+    |:-|:-|:-|:-|:-|:-|
+    |4大核     |核1 |核2 |核3-4 + 超线程|\<--          |\<--|
+    |4大核大小核|P核1|P核2|P核3-4       |\<--          |全E核|
+    |6大核     |核1 |核2 |核3           |核4-6 + 超线程|\<--|
+    |6大核大小核|P核1|P核2|P核3         |P核4-6        |全E核|
+    |8大核     |核1 |核2 |核3           |核4-8 + 超线程|\<--|
+    |8大核大小核|P核1|P核2|P核3         |P核4-8        |全E核|
+    |10大核    |核1 |核2 |核3           |核4-10        |\<--|
+    |6x2大核   |核1 |核2 |核3           |核4-6         |核7-12|
+    |8x2大核   |核1 |核2 |核3           |核4-8         |核9-16|
   - ## 其他游戏
     |MainThread|RenderThread|其他|
     |:-|:-|:-|
-    |核心1|核心2|核心3-N|
+    |核心1|核心2|核心3-N + 超线程|
 
 # 食用效果
 - ### 食用前
@@ -53,18 +45,18 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
 ![](./md/img/after.png)
 
 # 食用方式
-1. 前往 [Release] 下载V52版本
+1. 前往 [Release] 下载自动构建的exe
 2. ### 选择运行方式
   - ### 方式1  
-    直接运行ReimaginedScheduling.Services.exe  
-    开始玩游戏  
+    1. 直接运行ReimaginedScheduling.Services.exe并保持，直到你不需要玩游戏  
+    2. 开始玩游戏  
   - ### 方式2  
     传入参数运行（适合搭配快捷方式）  
     ```
     start "...\ReimaginedScheduling.Services.exe" "...\游戏.exe"
     ```
 
-> [!TIP]
+> [!NOTE]
 > 总物理核心低于4核就不建议使用了，正如我所说，我的程序是让高端CPU更上一层楼  
 > 除非尝试运行后确认可以缓解某些瓶颈，不然大概率在低核心CPU上会是负优化  
 
@@ -73,12 +65,12 @@ Intel和AMD都可以用，尤其对AMD改善更大，让AMD用户可以同等安
 
 # 调优避坑
 - ## 系统设置
-  <table>
-  <tr><th>设置</th>                        <th>系统版本</th>     <th>N卡</th>       <th>A卡</th>                <th>I卡</th></tr>
-  <tr><th rowspan="2">硬件加速GPU计划</th> <td>23H2以及以前</td> <td>建议不开</td>   <td rowspan="2">不支持</td> <td rowspan="4">没用过不知道</td></tr>
-  <tr>                                    <td>24H2以及以后</td> <td>不开白不开</td> </tr>
-  <tr><th rowspan="1">窗口化游戏优化</th>  <td>21H2-24H2</td>    <td colspan="2">不使用老软件可以开</td></tr>
-  </table>
+  ||系统版本|N卡|A卡|I卡|
+  |:-|:-|:-|:-|:-|
+  |硬件加速GPU计划|<=23H2|建议不开|不支持|没用过不知道|
+  |硬件加速GPU计划|>=24H2|不开白不开|不支持|没用过不知道|
+  |窗口化游戏优化|>=21H2|建议不开|建议开启|没用过不知道|
+
 - ## AMD注意项
   - ## BIOS注意项
     - ### PSS Support(Cool n Quite)

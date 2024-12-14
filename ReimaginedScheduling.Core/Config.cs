@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ReimaginedScheduling.Services;
+namespace ReimaginedScheduling.Core;
 
 public static class Config
 {
@@ -19,5 +19,5 @@ public static class Config
 
     //}
 
-    //private static readonly string _fileName = "ReimaginedScheduling.Services.Config.json";
+    //private static readonly string _fileName = "ReimaginedScheduling.Core.Config.json";
 }

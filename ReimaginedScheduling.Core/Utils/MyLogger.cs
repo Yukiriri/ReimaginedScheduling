@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace ReimaginedScheduling.Services.Utils;
+namespace ReimaginedScheduling.Core.Utils;
 
 public class MyLogger
 {

@@ -17,6 +17,8 @@ GetCursorInfo
 IsWindow
 
 CreateToolhelp32Snapshot
+Process32First
+Process32Next
 Thread32First
 Thread32Next
 
@@ -26,9 +28,18 @@ LookupPrivilegeValue
 AdjustTokenPrivileges
 
 OpenProcess
+GetPriorityClass
 SetPriorityClass
+GetProcessAffinityMask
+GetProcessDefaultCpuSets
 SetProcessDefaultCpuSets
+GetProcessDefaultCpuSetMasks
 OpenThread
-GetThreadDescription
+GetThreadPriority
 SetThreadPriority
+GetThreadGroupAffinity
+GetThreadSelectedCpuSets
 SetThreadSelectedCpuSets
+GetThreadSelectedCpuSetMasks
+GetThreadIdealProcessorEx
+GetThreadDescription

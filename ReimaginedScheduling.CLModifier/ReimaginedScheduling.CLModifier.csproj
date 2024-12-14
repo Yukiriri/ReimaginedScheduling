@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ReimaginedScheduling.Services\ReimaginedScheduling.Services.csproj" />
+    <ProjectReference Include="..\ReimaginedScheduling.Core\ReimaginedScheduling.Core.csproj" />
     <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.106">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

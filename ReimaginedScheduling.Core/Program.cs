@@ -1,6 +1,7 @@
-﻿using ReimaginedScheduling.Services;
-using ReimaginedScheduling.Services.Utils;
+﻿using ReimaginedScheduling.Core;
+using ReimaginedScheduling.Core.Utils;
 using System;
+using System.Linq;
 using System.Threading;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -35,6 +36,11 @@ static bool EnableSeDebug()
 
 MyLogger.Debug("\n" + CPUSetInfo.ToString());
 MyLogger.Debug($"EnableSeDebug: {EnableSeDebug()}");
+unsafe
+{
+    uint cpuid = CPUSetInfo.PhysicalPECores.Last();
+    PInvoke.SetProcessDefaultCpuSets(PInvoke.GetCurrentProcess(), &cpuid, 1);
+}
 
 for (var gpm = new GameProcessManager(); ; Thread.Sleep(1000))
 {

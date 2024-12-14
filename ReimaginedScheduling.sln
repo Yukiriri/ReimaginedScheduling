@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimaginedScheduling.Services", "ReimaginedScheduling.Services\ReimaginedScheduling.Services.csproj", "{C42A7A49-159E-4E08-9720-82F338F6C8FF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimaginedScheduling.Core", "ReimaginedScheduling.Core\ReimaginedScheduling.Core.csproj", "{C42A7A49-159E-4E08-9720-82F338F6C8FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimaginedScheduling.Viewer", "ReimaginedScheduling.Viewer\ReimaginedScheduling.Viewer.csproj", "{B25CE023-4462-4766-9453-A19BAE01DC41}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimaginedScheduling.CLViewer", "ReimaginedScheduling.CLViewer\ReimaginedScheduling.CLViewer.csproj", "{B25CE023-4462-4766-9453-A19BAE01DC41}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimaginedScheduling.Modifier", "ReimaginedScheduling.Modifier\ReimaginedScheduling.Modifier.csproj", "{8D290A3C-B0C1-4ACE-81EA-95F4A0AB0D52}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimaginedScheduling.CLModifier", "ReimaginedScheduling.CLModifier\ReimaginedScheduling.CLModifier.csproj", "{8D290A3C-B0C1-4ACE-81EA-95F4A0AB0D52}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
