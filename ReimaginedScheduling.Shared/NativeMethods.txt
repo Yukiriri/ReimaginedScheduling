@@ -1,31 +1,15 @@
 GetSystemCpuSetInformation
 
-PdhOpenQuery
-PdhCloseQuery
-PdhAddCounter
-PdhCollectQueryData
-PdhGetFormattedCounterArray
-
-GetDesktopWindow
 GetForegroundWindow
 GetWindowThreadProcessId
 GetWindowTextLength
 GetWindowText
-GetClientRect
-GetWindowRect
-GetCursorInfo
-IsWindow
 
 CreateToolhelp32Snapshot
 Process32First
 Process32Next
 Thread32First
 Thread32Next
-
-GetCurrentProcess
-OpenProcessToken
-LookupPrivilegeValue
-AdjustTokenPrivileges
 
 OpenProcess
 GetPriorityClass
@@ -42,4 +26,6 @@ GetThreadSelectedCpuSets
 SetThreadSelectedCpuSets
 GetThreadSelectedCpuSetMasks
 GetThreadIdealProcessorEx
+SetThreadIdealProcessor
 GetThreadDescription
+QueryThreadCycleTime

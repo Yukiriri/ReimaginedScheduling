@@ -4,7 +4,7 @@ using System.Linq;
 using Windows.Win32;
 using Windows.Win32.System.SystemInformation;
 
-namespace ReimaginedScheduling.Core.Utils;
+namespace ReimaginedScheduling.Shared;
 
 public class CPUSetInfo
 {
@@ -54,7 +54,7 @@ public class CPUSetInfo
             .Where(cs => cs.Anonymous.CpuSet.EfficiencyClass == PCoreEfficiencyIndex && cs.Anonymous.CpuSet.CoreIndex != cs.Anonymous.CpuSet.LogicalProcessorIndex)
             .Select(cs => cs.Anonymous.CpuSet.Id)
             .ToList();
-        PhysicalPECores = [.. PhysicalPCores, .. ECores];
+        PhysicalPECores = [..PhysicalPCores, ..ECores];
     }
 
     public static uint ToMask(uint[] cpuids)

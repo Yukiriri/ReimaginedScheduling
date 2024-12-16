@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using Windows.Win32;
 using Windows.Win32.System.Performance;
 
-namespace ReimaginedScheduling.Core.Utils;
+namespace ReimaginedScheduling.CLI.Auto;
 
 public class PerformanceMonitor
 {
@@ -17,7 +17,7 @@ public class PerformanceMonitor
         _ = PInvoke.PdhCloseQuery(_hQuery);
     }
 
-    public double GetAllGPUUsage() => GetGPUUsage(new Regex("."));
+    public double GetAllGPUUsage() => GetGPUUsage(new Regex("engtype_(3D|Graphics)"));
 
     public double GetGPUUsage(uint PID) => GetGPUUsage(new Regex($"pid_{PID}_.*engtype_(3D|Graphics)"));
 

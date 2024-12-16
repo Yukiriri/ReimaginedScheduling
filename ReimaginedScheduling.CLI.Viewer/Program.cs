@@ -1,12 +1,13 @@
-﻿using ReimaginedScheduling.Core;
-using ReimaginedScheduling.Core.Utils;
+﻿using ReimaginedScheduling.Shared;
 using System;
 using System.Linq;
 using System.Threading;
 using Windows.System;
 using Windows.Win32;
 
+bool isSortCycleTime = true;
 bool isHideNameless = true;
+Console.SetWindowSize(Console.WindowWidth + 20, Console.WindowHeight);
 while (true)
 {
     MyConsole.ScrollToTop();
@@ -20,17 +21,18 @@ while (true)
         if ((PInvoke.GetAsyncKeyState((int)VirtualKey.Control) & 0x8000) != 0 &&
             (PInvoke.GetAsyncKeyState((int)VirtualKey.Insert) & 0x8000) != 0)
         {
-            (windowName, pid, maintid) = GameProcessManager.GetForegroundWindowInfos();
+            (windowName, pid, maintid) = ProcessInfo.GetFGWindowInfos();
         }
     }
 
+    var processInfo = new ProcessInfo(pid);
     for (; pid != 0;)
     {
+        MyConsole.ScrollToTop();
         Thread.Sleep(500);
-        var gtm = new GameThreadManager(pid, maintid);
         {
-            var pdi = gtm.GetProcessDetailedInfo();
-            if (pdi == null)
+            var pdi = processInfo.GetProcessDetailedInfo();
+            if (pdi.PID == 0)
             {
                 pid = 0;
                 break;
@@ -49,26 +51,27 @@ while (true)
             }
             windowName += new string(' ', 40 - showlength);
             str  = $"|{windowName}";
-            str += $"|{pid,-5}";
-            str += $"|{pdi.Value.Priority,-8}";
-            str += $"|{pdi.Value.Mask,-16:X}";
-            str += $"|{$"({pdi.Value.CpuSetsCount})",-7}";
-            str += $"|{$"({pdi.Value.CpuSetMasksCount})",-11}";
+            str += $"|{pdi.PID,-5}";
+            str += $"|{pdi.Priority,-8}";
+            str += $"|{pdi.Mask,-16:X}";
+            str += $"|{$"({pdi.CpuSetsCount})",-7}";
+            str += $"|{$"({pdi.CpuSetMasksCount})",-11}";
             str += $"|{maintid,-7}";
             str += "|";
             Console.Write(str + new string(' ', Math.Max(0, Console.WindowWidth - splitstr.Length)));
             MyConsole.FillLine(splitstr);
-            MyConsole.FillLine();
-            MyConsole.FillLine();
         }
         {
-            var str = $"|{"Name",-40}|TID  |Priority|{"Mask",-16}|CpuSets|CpuSetMasks|Ideal|";
+            var str = $"|{"Name",-40}|TID  |Priority|{"Mask",-16}|CpuSets|CpuSetMasks|Ideal|{"CycleTime",-21}|";
             var splitstr = new string('-', str.Length);
             MyConsole.FillLine(splitstr);
             MyConsole.FillLine(str);
             MyConsole.FillLine(splitstr);
 
-            foreach (var tdi in gtm.GetThreadDetailedInfos())
+            var tdis = processInfo.GetThreadDetailedInfos();
+            if (isSortCycleTime)
+                tdis = [..tdis.OrderByDescending(x => x.CycleTime)];
+            foreach (var tdi in tdis)
             {
                 if (isHideNameless && tdi.TID != maintid && tdi.Name.Length == 0)
                     continue;
@@ -79,6 +82,7 @@ while (true)
                 str += $"|{$"{tdi.CpuSetID}({tdi.CpuSetsCount})",-7}";
                 str += $"|{$"({tdi.CpuSetMasksCount})",-11}";
                 str += $"|{tdi.Ideal,-5}";
+                str += $"|{tdi.CycleTime,-21}";
                 str += "|";
                 MyConsole.FillLine(str);
             }
@@ -86,17 +90,19 @@ while (true)
         }
 
         MyConsole.FillLine();
-        MyConsole.FillLine("'Q': quit");
-        MyConsole.FillLine("'N': toggle nameless");
+        MyConsole.FillLine("'Q': Quit");
+        MyConsole.FillLine("'S': Sort CycleTime");
+        MyConsole.FillLine("'N': Toggle Nameless");
         MyConsole.FillConsole();
-        MyConsole.ScrollToTop();
-
         while (Console.KeyAvailable)
         {
             switch (Console.ReadKey().KeyChar)
             {
                 case 'q':
                     pid = 0;
+                    break;
+                case 's':
+                    isSortCycleTime = !isSortCycleTime;
                     break;
                 case 'n':
                     isHideNameless = !isHideNameless;

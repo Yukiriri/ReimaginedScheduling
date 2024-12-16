@@ -1,46 +1,26 @@
-﻿using ReimaginedScheduling.Core.Utils;
-using System;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿using System;
+using ReimaginedScheduling.Shared;
 using Windows.Win32;
 using Windows.Win32.Foundation;
-using Windows.Win32.System.Threading;
 using Windows.Win32.UI.WindowsAndMessaging;
 
-namespace ReimaginedScheduling.Core;
+namespace ReimaginedScheduling.CLI.Auto;
 
 public class GameProcessManager
 {
-    public static (string windowName, uint PID, uint TID) GetForegroundWindowInfos()
-    {
-        unsafe
-        {
-            var hwnd = PInvoke.GetForegroundWindow();
-            var textLength = PInvoke.GetWindowTextLength(hwnd) + 1;
-            var text = new char[textLength];
-            string windowName = "";
-            fixed (char* textPtr = text)
-            {
-                if (PInvoke.GetWindowText(hwnd, textPtr, textLength) > 0)
-                    windowName = new string(text);
-            }
-            uint pid = 0;
-            var tid = PInvoke.GetWindowThreadProcessId(hwnd, &pid);
-            return (windowName, pid, tid);
-        }
-    }
+    public static int GPUUsageThreshold { get; private set; } = 25;
+    public static ulong GPUMemUsageThreshold { get; private set; } = 1250;
 
     public GameProcessManager()
     {
-        PInvoke.GetWindowRect(PInvoke.GetDesktopWindow(), out _deskRect);
+        PInvoke.GetClientRect(PInvoke.GetDesktopWindow(), out _desktopRect);
     }
 
     public bool IsGameProcess()
     {
         var hwnd = PInvoke.GetForegroundWindow();
         PInvoke.GetClientRect(hwnd, out var wndRect);
-        if (wndRect.Size != _deskRect.Size)
+        if (wndRect.Size != _desktopRect.Size)
         {
             var ci = new CURSORINFO();
             if (PInvoke.GetCursorInfo(ref ci) && ci.flags != 0)
@@ -54,22 +34,26 @@ public class GameProcessManager
             {
                 var gpuUsage = _performanceMonitor.GetGPUUsage(pid);
                 var gpuMemMB = _performanceMonitor.GetGPUMemUsage(pid) >> 20;
-                if (gpuUsage >= Config.GPUUsageThreshold && gpuMemMB >= Config.GPUMemUsageThreshold)
+                if (gpuUsage >= GPUUsageThreshold && gpuMemMB >= GPUMemUsageThreshold)
                     return true;
             }
         }
         return false;
     }
 
-    public void AttachGameProcess()
+    public void TryAttachGameProcess()
     {
         var hwnd = PInvoke.GetForegroundWindow();
         if (hwnd == _processData.hWnd)
             return;
         if (!_processData.hWnd.IsNull)
             DettachGameProcess(true);
+        AttachGameProcess();
+    }
 
-        var (windowName, pid, _) = GetForegroundWindowInfos();
+    private void AttachGameProcess()
+    {
+        var (windowName, pid, _) = ProcessInfo.GetFGWindowInfos();
         if (windowName.Length == 0)
         {
             //MyLogger.Debug($"跳过无名窗口");
@@ -116,7 +100,7 @@ public class GameProcessManager
         public string exeName;
     }
 
-    private RECT _deskRect = new();
+    private readonly RECT _desktopRect = new();
     private readonly PerformanceMonitor _performanceMonitor = new();
     private ProcessData _processData = new();
 }

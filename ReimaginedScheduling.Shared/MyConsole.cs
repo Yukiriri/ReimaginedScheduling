@@ -1,6 +1,6 @@
 using System;
 
-namespace ReimaginedScheduling.Core.Utils;
+namespace ReimaginedScheduling.Shared;
 
 public class MyConsole
 {
