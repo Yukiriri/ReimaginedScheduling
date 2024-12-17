@@ -5,7 +5,7 @@
     <TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
     <ApplicationIcon>118589293_p0.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <BaseOutputPath>..\bin</BaseOutputPath>
+    <!-- <BaseOutputPath>..\bin</BaseOutputPath> -->
     <Nullable>enable</Nullable>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
@@ -17,10 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ReimaginedScheduling.Shared\ReimaginedScheduling.Shared.csproj" />
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.106">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
   </ItemGroup>
 
 </Project>

@@ -2,89 +2,102 @@
 using System;
 using System.Linq;
 using System.Threading;
-using Windows.System;
-using Windows.Win32;
+
+Console.SetWindowSize(Console.WindowWidth + 10, Console.WindowHeight);
+ProcessRequire.EnableSeDebug();
+ProcessRequire.SetLastCpu();
 
 bool isSortCycleTime = true;
 bool isHideNameless = true;
-Console.SetWindowSize(Console.WindowWidth + 20, Console.WindowHeight);
+
 while (true)
 {
     MyConsole.ScrollToTop();
     MyConsole.FillConsole();
     Console.SetCursorPosition(0, 0);
-    Console.Write("在游戏窗口内按下Ctrl + Ins开始读取线程");
+    Console.Write("Ctrl + Ins");
 
-    var (windowName, pid, maintid) = ("", 0u, 0u);
+    var pid = 0u;
+    var windowName = "";
+    var maintid = 0u;
     for (; pid == 0; Thread.Sleep(1))
     {
-        if ((PInvoke.GetAsyncKeyState((int)VirtualKey.Control) & 0x8000) != 0 &&
-            (PInvoke.GetAsyncKeyState((int)VirtualKey.Insert) & 0x8000) != 0)
+        if (HotKey.IsCtrl && HotKey.IsInsert)
         {
-            (windowName, pid, maintid) = ProcessInfo.GetFGWindowInfos();
+            var wi = new WindowInfo();
+            wi.SetForegroundHWND();
+            pid = wi.GetPID();
+            windowName = wi.GetName();
+            maintid = wi.GetTID();
         }
     }
 
-    var processInfo = new ProcessInfo(pid);
     for (; pid != 0;)
     {
         MyConsole.ScrollToTop();
         Thread.Sleep(500);
+        
+        var pi = new ProcessInfo(pid);
+        if (pi.IsValid)
         {
-            var pdi = processInfo.GetProcessDetailedInfo();
-            if (pdi.PID == 0)
-            {
-                pid = 0;
-                break;
-            }
-            
-            var str = $"|{"Name",-40}|PID  |Priority|{"Mask",-16}|CpuSets|CpuSetMasks|MainTID|";
+            var str = $"|PID  |{"Name",-40}|Priority|{"Mask",-16}|CpuSets|CpuSetMasks|MainTID|";
             var splitstr = new string('-', str.Length);
             MyConsole.FillLine(splitstr);
             MyConsole.FillLine(str);
             MyConsole.FillLine(splitstr);
 
+            str  = $"|{pid,-5}";
             var showlength = 0;
             while ((showlength = windowName.Aggregate(0, (length, next) => length + (next > 127 ? 2 : 1))) > 40)
             {
                 windowName = windowName[0..(windowName.Length - 1)];
             }
             windowName += new string(' ', 40 - showlength);
-            str  = $"|{windowName}";
-            str += $"|{pdi.PID,-5}";
-            str += $"|{pdi.Priority,-8}";
-            str += $"|{pdi.Mask,-16:X}";
-            str += $"|{$"({pdi.CpuSetsCount})",-7}";
-            str += $"|{$"({pdi.CpuSetMasksCount})",-11}";
+            str += $"|{windowName}";
+            str += $"|{pi.GetPriority(),-8}";
+            str += $"|{pi.GetMask(),-16:X}";
+            str += $"|{$"({pi.GetCpuSets().Length})",-7}";
+            str += $"|{$"({pi.GetCpuSetMaskCount()})",-11}";
             str += $"|{maintid,-7}";
             str += "|";
             Console.Write(str + new string(' ', Math.Max(0, Console.WindowWidth - splitstr.Length)));
             MyConsole.FillLine(splitstr);
         }
+        else
         {
-            var str = $"|{"Name",-40}|TID  |Priority|{"Mask",-16}|CpuSets|CpuSetMasks|Ideal|{"CycleTime",-21}|";
+            pid = 0;
+            break;
+        }
+        
+        {
+            var str = $"|TID  |{"Name",-40}|Priority|{"Mask",-16}|CpuSets|CpuSetMasks|Ideal|{"CycleTime",-21}|";
             var splitstr = new string('-', str.Length);
             MyConsole.FillLine(splitstr);
             MyConsole.FillLine(str);
             MyConsole.FillLine(splitstr);
 
-            var tdis = processInfo.GetThreadDetailedInfos();
+            var ticts = ThreadInfo.PackWithCycleTime(ProcessInfo.GetTIDs(pid));
             if (isSortCycleTime)
-                tdis = [..tdis.OrderByDescending(x => x.CycleTime)];
-            foreach (var tdi in tdis)
+                ticts = [..ticts.OrderByDescending(x => x.CycleTime)];
+            foreach (var tict in ticts)
             {
-                if (isHideNameless && tdi.TID != maintid && tdi.Name.Length == 0)
-                    continue;
-                str  = $"|{tdi.Name[0..Math.Min(tdi.Name.Length, 40)],-40}";
-                str += $"|{tdi.TID,-5}";
-                str += $"|{tdi.Priority,-8}";
-                str += $"|{tdi.Mask,-16:X}";
-                str += $"|{$"{tdi.CpuSetID}({tdi.CpuSetsCount})",-7}";
-                str += $"|{$"({tdi.CpuSetMasksCount})",-11}";
-                str += $"|{tdi.Ideal,-5}";
-                str += $"|{tdi.CycleTime,-21}";
-                str += "|";
-                MyConsole.FillLine(str);
+                var ti = new ThreadInfo(tict.TID);
+                if (ti.IsValid)
+                {
+                    var tname = ti.GetName();
+                    if (isHideNameless && tict.TID != maintid && tname.Length == 0)
+                        continue;
+                    str  = $"|{tict.TID,-5}";
+                    str += $"|{tname[0..Math.Min(tname.Length, 40)],-40}";
+                    str += $"|{ti.GetPriority(),-8}";
+                    str += $"|{ti.GetMask(),-16:X}";
+                    str += $"|{$"{ti.GetCpuSets().DefaultIfEmpty().First()}({ti.GetCpuSets().Length})",-7}";
+                    str += $"|{$"({ti.GetCpuSetMaskCount()})",-11}";
+                    str += $"|{ti.GetIdealNumber(),-5}";
+                    str += $"|{tict.CycleTime,-21}";
+                    str += "|";
+                    MyConsole.FillLine(str);
+                }
             }
             MyConsole.FillLine(splitstr);
         }

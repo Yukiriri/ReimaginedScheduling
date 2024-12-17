@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Microsoft.Win32.SafeHandles;
 using Windows.Win32;
 using Windows.Win32.System.Diagnostics.ToolHelp;
 using Windows.Win32.System.Threading;
@@ -7,49 +8,7 @@ namespace ReimaginedScheduling.Shared;
 
 public class ProcessInfo
 {
-    public struct ProcessDetailedInfo
-    {
-        public uint PID;
-        public uint Priority;
-        public nuint Mask;
-        public uint CpuSetsCount;
-        public ushort CpuSetMasksCount;
-    }
-    public struct ThreadDetailedInfo
-    {
-        public string Name;
-        public uint TID;
-        public int Priority;
-        public nuint Mask;
-        public uint CpuSetID;
-        public uint CpuSetsCount;
-        public ushort CpuSetMasksCount;
-        public uint Ideal;
-        public ulong CycleTime;
-    }
-
-    public ProcessInfo(uint PID)
-    {
-        _PID = PID;
-    }
-
-    public static unsafe (string windowName, uint PID, uint TID) GetFGWindowInfos()
-    {
-        var hwnd = PInvoke.GetForegroundWindow();
-        var textLength = PInvoke.GetWindowTextLength(hwnd) + 1;
-        var text = new char[textLength];
-        string windowName = "";
-        fixed (char* textPtr = text)
-        {
-            if (PInvoke.GetWindowText(hwnd, textPtr, textLength) > 0)
-                windowName = new string(text);
-        }
-        uint pid = 0;
-        var tid = PInvoke.GetWindowThreadProcessId(hwnd, &pid);
-        return (windowName, pid, tid);
-    }
-
-    public unsafe string GetExeName()
+    public static unsafe string GetExeName(uint PID)
     {
         using var hsnap = PInvoke.CreateToolhelp32Snapshot_SafeHandle(CREATE_TOOLHELP_SNAPSHOT_FLAGS.TH32CS_SNAPPROCESS, 0);
         var pe32 = new PROCESSENTRY32()
@@ -60,7 +19,7 @@ public class ProcessInfo
         {
             do
             {
-                if (pe32.th32ProcessID == _PID)
+                if (pe32.th32ProcessID == PID)
                 {
                     return new string((sbyte*)&pe32.szExeFile._0);
                 }
@@ -69,7 +28,7 @@ public class ProcessInfo
         return "";
     }
 
-    public unsafe List<uint> GetTIDs()
+    public static unsafe List<uint> GetTIDs(uint PID)
     {
         var TIDs = new List<uint>();
         using var hsnap = PInvoke.CreateToolhelp32Snapshot_SafeHandle(CREATE_TOOLHELP_SNAPSHOT_FLAGS.TH32CS_SNAPTHREAD, 0);
@@ -81,7 +40,7 @@ public class ProcessInfo
         {
             do
             {
-                if (te32.th32OwnerProcessID == _PID)
+                if (te32.th32OwnerProcessID == PID)
                 {
                     TIDs.Add(te32.th32ThreadID);
                 }
@@ -90,66 +49,43 @@ public class ProcessInfo
         return TIDs;
     }
 
-    public ProcessDetailedInfo GetProcessDetailedInfo()
+    public ProcessInfo(uint PID)
     {
-        using var hproc = PInvoke.OpenProcess_SafeHandle(
+        _hProcess = PInvoke.OpenProcess_SafeHandle(
             PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_INFORMATION|
             PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION|
             PROCESS_ACCESS_RIGHTS.PROCESS_SET_INFORMATION|
-            PROCESS_ACCESS_RIGHTS.PROCESS_SET_LIMITED_INFORMATION, false, _PID);
-        if (hproc == null)
-            return new();
-        
-        var priority = PInvoke.GetPriorityClass(hproc);
-        PInvoke.GetProcessAffinityMask(hproc, out var mask, out _);
-        PInvoke.GetProcessDefaultCpuSets(hproc, new(), out var requiredIdCount);
-        PInvoke.GetProcessDefaultCpuSetMasks(hproc, new(), out var requiredMaskCount);
-        return new()
-        {
-            PID = _PID,
-            Priority = priority,
-            Mask = mask,
-            CpuSetsCount = requiredIdCount,
-            CpuSetMasksCount = requiredMaskCount,
-        };
+            PROCESS_ACCESS_RIGHTS.PROCESS_SET_LIMITED_INFORMATION, false, PID);
     }
 
-    public List<ThreadDetailedInfo> GetThreadDetailedInfos()
+    public bool IsInvalid => _hProcess.IsInvalid;
+    public bool IsValid => !_hProcess.IsInvalid;
+
+    public uint GetPriority() => PInvoke.GetPriorityClass(_hProcess);
+
+    public bool SetPriority(uint priority) => PInvoke.SetPriorityClass(_hProcess, (PROCESS_CREATION_FLAGS)priority);
+
+    public nuint GetMask()
     {
-        var tdis = new List<ThreadDetailedInfo>();
-        foreach (var tid in GetTIDs())
-        {
-            using var hth = PInvoke.OpenThread_SafeHandle(
-                THREAD_ACCESS_RIGHTS.THREAD_QUERY_INFORMATION|
-                THREAD_ACCESS_RIGHTS.THREAD_QUERY_LIMITED_INFORMATION|
-                THREAD_ACCESS_RIGHTS.THREAD_SET_INFORMATION|
-                THREAD_ACCESS_RIGHTS.THREAD_SET_LIMITED_INFORMATION, false, tid);
-            if (hth == null)
-                continue;
-            
-            PInvoke.GetThreadDescription(hth, out var ppszThreadDescription);
-            var priority = PInvoke.GetThreadPriority(hth);
-            PInvoke.GetThreadIdealProcessorEx(hth, out var lpIdealProcessor);
-            PInvoke.GetThreadGroupAffinity(hth, out var groupAffinity);
-            var cpuids = new uint[1];
-            PInvoke.GetThreadSelectedCpuSets(hth, cpuids, out var requiredIdCount);
-            PInvoke.GetThreadSelectedCpuSetMasks(hth, new(), out var requiredMaskCount);
-            PInvoke.QueryThreadCycleTime(hth, out var cycleTime);
-            tdis.Add(new()
-            {
-                Name = ppszThreadDescription.ToString() ?? "",
-                TID = tid,
-                Priority = priority,
-                Mask = groupAffinity.Mask,
-                CpuSetID = cpuids[0],
-                CpuSetsCount = requiredIdCount,
-                CpuSetMasksCount = requiredMaskCount,
-                Ideal = lpIdealProcessor.Number,
-                CycleTime = cycleTime,
-            });
-        }
-        return tdis;
+        PInvoke.GetProcessAffinityMask(_hProcess, out var mask, out _);
+        return mask;
     }
 
-    private readonly uint _PID = 0;
+    public uint[] GetCpuSets()
+    {
+        PInvoke.GetProcessDefaultCpuSets(_hProcess, new(), out var requiredIdCount);
+        var cpuids = new uint[requiredIdCount];
+        PInvoke.GetProcessDefaultCpuSets(_hProcess, cpuids, out _);
+        return cpuids;
+    }
+
+    public bool SetCpuSets(List<uint> CPUIDs) => PInvoke.SetProcessDefaultCpuSets(_hProcess, CPUIDs.ToArray());
+
+    public int GetCpuSetMaskCount()
+    {
+        PInvoke.GetProcessDefaultCpuSetMasks(_hProcess, new(), out var requiredMaskCount);
+        return requiredMaskCount;
+    }
+
+    private readonly SafeFileHandle _hProcess = new();
 }

@@ -4,11 +4,11 @@ namespace ReimaginedScheduling.Shared;
 
 public class MyConsole
 {
-    public static void FillLine(string msg = "")
+    public static void FillLine(string message = "")
     {
-        Console.Write(msg);
-        if (msg.Length < Console.WindowWidth)
-            Console.Write(new string(' ', Console.WindowWidth - msg.Length));
+        Console.Write(message);
+        if (message.Length < Console.WindowWidth)
+            Console.Write(new string(' ', Console.WindowWidth - message.Length));
     }
 
     public static void FillConsole()

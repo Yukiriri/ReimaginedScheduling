@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using Windows.Win32;
 using Windows.Win32.System.Performance;
 
-namespace ReimaginedScheduling.CLI.Auto;
+namespace ReimaginedScheduling.Shared;
 
 public class PerformanceMonitor
 {

@@ -16,27 +16,29 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
 </div>
 
 > [!IMPORTANT]
-> 如果出现这条提示，就说明项目正在完全重新计划，近期的构建将是空壳蓝图版本，功能还残缺  
+> 如果出现这条提示，就说明项目正在大型重新设计，近期的Release构建将是未完型版本，功能还残缺  
 > 先重点看readme的实现合理性，Release构建仅为尝鲜  
 
 # 实现原理
-- ## 线程分布方式
+- ## 线程排布
   - ## UE和Unity游戏
-    |             | GameThread | RenderThread | RHIThread / GfxDevicesThread | Foreground Worker / Pool | 其他   |
-    | :---------- | :--------- | :----------- | :--------------------------- | :----------------------- | :----- |
-    | 4大核       | 核1        | 核2          | 核3-4 + 超线程               | <--                      | <--    |
-    | 4大核大小核 | P核1       | P核2         | P核3                         | P核4                     | 全E核  |
-    | 6大核       | 核1        | 核2          | 核3                          | 核4-6 + 超线程           | <--    |
-    | 6大核大小核 | P核1       | P核2         | P核3                         | P核4-6                   | 全E核  |
-    | 8大核       | 核1        | 核2          | 核3                          | 核4-8 + 超线程           | <--    |
-    | 8大核大小核 | P核1       | P核2         | P核3                         | P核4-8                   | 全E核  |
-    | 10大核      | 核1        | 核2          | 核3                          | 核4-10                   | <--    |
-    | 6x2大核     | 核1        | 核2          | 核3                          | 核4-6                    | 核7-12 |
-    | 8x2大核     | 核1        | 核2          | 核3                          | 核4-8                    | 核9-16 |
+    | 核心 | 线程                                  |
+    | :--- | :------------------------------------ |
+    | 1    | GameThread                            |
+    | 2    | Render / Audio / RHISubmission Thread |
+    | 3    | RHI / GfxDevices Thread               |
+    | 4-N  | Foreground Worker                     |
   - ## 其他游戏
-    | MainThread | RenderThread | 其他             |
-    | :--------- | :----------- | :--------------- |
-    | 核心1      | 核心2        | 核心3-N + 超线程 |
+    | 核心 | 线程         |
+    | :--- | :----------- |
+    | 1    | MainThread   |
+    | 2    | RenderThread |
+    | 3-N  | 其他         |
+- ## 核心使用策划
+    | 大核数量 | 可独占范围 | 最低共享范围   |
+    | :------- | :--------- | :------------- |
+    | <12      | 1-N/2      | N/2-N + 超线程 |
+    | >=12     | 1-N/2      | N/2-N          |
 
 # 食用效果
 - ### 食用前
@@ -47,14 +49,16 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
 # 食用方式
 1. 前往 [Release] 选择下载自动构建的exe  
 2. 各exe使用方式  
-  - `ReimaginedScheduling.CLI.Auto.exe`  
+  - `ReimaginedScheduling.CLI.Modifier.exe`  
+    - 方式1  
+      传入参数运行（适合搭配快捷方式）  
+      ```
+      start "...\ReimaginedScheduling.CLI.Modifier.exe" "...\游戏.exe"
+      ```
+    - 方式2  
     1. 直接运行并保持，直到不需要玩游戏  
     2. 开始玩游戏  
-  - `ReimaginedScheduling.CLI.Modifier.exe`  
-    传入参数运行（适合搭配快捷方式）  
-    ```
-    start "...\ReimaginedScheduling.CLI.Modifier.exe" "...\游戏.exe"
-    ```
+    3. 在游戏中按下提示的快捷键  
   - `ReimaginedScheduling.CLI.Viewer.exe`  
     这个是给专业人士采集线程数据并向我提交建议用的  
 
