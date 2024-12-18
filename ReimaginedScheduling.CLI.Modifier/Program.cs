@@ -11,7 +11,7 @@ var maintid = 0u;
 
 void ToggleScheduling()
 {
-    var distribution = DistributionGenerator.Generate(maintid, ProcessInfo.GetTIDs(pid));
+    var distribution = DistributionGenerator.Generate(pid, maintid);
     DistributionGenerator.ToggleScheduling(pid, windowName, distribution, HotKey.IsPageUp);
     Thread.Sleep(2000);
     Console.Write(Config.ConsoleSplitRow);

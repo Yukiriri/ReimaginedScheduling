@@ -19,8 +19,7 @@ public class WindowInfo
         {
             if (PInvoke.GetWindowText(_hWND, textPtr, textLength) > 0)
             {
-                windowName = new string(text);
-                windowName = windowName.TrimEnd('\0');
+                windowName = new string(textPtr);
             }
         }
         return windowName;

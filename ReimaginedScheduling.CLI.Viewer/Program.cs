@@ -48,10 +48,10 @@ while (true)
 
             str  = $"|{pid,-5}";
             str += $"|{windowName}";
-            str += $"|{pi.GetPriority(),-8}";
-            str += $"|{pi.GetMask(),-16:X}";
-            str += $"|{$"({pi.GetCpuSets().Length})",-7}";
-            str += $"|{$"({pi.GetCpuSetMaskCount()})",-11}";
+            str += $"|{pi.CurrentPriority,-8}";
+            str += $"|{pi.CurrentMask,-16:X}";
+            str += $"|{$"({pi.CurrentCpuSetCount})",-7}";
+            str += $"|{$"({pi.CurrentCpuSetMaskCount})",-11}";
             str += $"|{maintid,-7}";
             str += "|";
             Console.Write(str + new string(' ', Math.Max(0, Console.WindowWidth - splitstr.Length)));
@@ -70,25 +70,25 @@ while (true)
             MyConsole.FillLineIfFree(str);
             MyConsole.FillLineIfFree(splitstr);
 
-            var ticts = ThreadInfo.PackWithCycleTime(ProcessInfo.GetTIDs(pid));
+            var thinfos = ProcessInfo.GetTIDs(pid).Select(x => (TID: x, ti: new ThreadInfo(x)));
             if (isSortCycleTime)
-                ticts = [..ticts.OrderByDescending(x => x.CycleTime)];
-            foreach (var tict in ticts)
+                thinfos = [..thinfos.OrderByDescending(x => x.ti.CurrentCycleTime)];
+            foreach (var thinfo in thinfos)
             {
-                var ti = new ThreadInfo(tict.TID);
-                if (ti.IsValid)
+                if (thinfo.ti.IsValid)
                 {
-                    var tname = ti.GetName();
-                    if (isHideNameless && tict.TID != maintid && tname.Length == 0)
+                    var tname = thinfo.ti.CurrentName;
+                    tname = tname[0..Math.Min(tname.Length, 40)];
+                    if (isHideNameless && thinfo.TID != maintid && tname.Length == 0)
                         continue;
-                    str  = $"|{tict.TID,-5}";
-                    str += $"|{tname[0..Math.Min(tname.Length, 40)],-40}";
-                    str += $"|{ti.GetPriority(),-8}";
-                    str += $"|{ti.GetMask(),-16:X}";
-                    str += $"|{$"{ti.GetCpuSets().DefaultIfEmpty().First()}({ti.GetCpuSets().Length})",-7}";
-                    str += $"|{$"({ti.GetCpuSetMaskCount()})",-11}";
-                    str += $"|{ti.GetIdealNumber(),-5}";
-                    str += $"|{tict.CycleTime,-21}";
+                    str  = $"|{thinfo.TID,-5}";
+                    str += $"|{tname,-40}";
+                    str += $"|{thinfo.ti.CurrentPriority,-8}";
+                    str += $"|{thinfo.ti.CurrentMask,-16:X}";
+                    str += $"|{$"{thinfo.ti.CurrentCpuSets.DefaultIfEmpty().First()}({thinfo.ti.CurrentCpuSetCount})",-7}";
+                    str += $"|{$"({thinfo.ti.CurrentCpuSetMaskCount})",-11}";
+                    str += $"|{thinfo.ti.CurrentIdealNumber,-5}";
+                    str += $"|{thinfo.ti.CurrentCycleTime,-21}";
                     str += "|";
                     MyConsole.FillLineIfFree(str);
                 }

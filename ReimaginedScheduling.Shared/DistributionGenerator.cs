@@ -40,7 +40,7 @@ public class DistributionGenerator
         new Regex(@"Render.*(T|t)hread"),
     ];
 
-    public static Distribution Generate(uint mainTID, List<uint> TIDs)
+    public static Distribution Generate(uint PID, uint mainTID)
     {
         var PhyPCores = CPUSetInfo.PhysicalPCores[0..];
         var HTs = CPUSetInfo.HyperThreads[0..];
@@ -55,21 +55,21 @@ public class DistributionGenerator
         };
         var PIndex = distribution.PAttributions.Count;
         
-        var thinfos = ThreadInfo.PackWithName(TIDs);
-        bool arrangeThread(Regex[] regexs)
+        var thinfos = ProcessInfo.GetTIDs(PID).Select(x => (TID: x, ti: new ThreadInfo(x)));
+        bool arrangeThread(Regex[] regs)
         {
             var ret = false;
-            foreach (var r in regexs)
+            foreach (var reg in regs)
             {
-                var thifs = thinfos.Where(x => r.IsMatch(x.Name));
-                foreach (var thif in thifs)
+                var minfos = thinfos.Where(x => x.ti.IsValid && reg.IsMatch(x.ti.CurrentName));
+                foreach (var minfo in minfos)
                 {
                     if (PIndex < PhyPCores.Count)
                     {
-                        distribution.PAttributions.Add(new(thif.Name, thif.TID, PhyPCores[PIndex]));
+                        distribution.PAttributions.Add(new(minfo.ti.CurrentName, minfo.TID, PhyPCores[PIndex]));
                     }
                 }
-                if (thifs.Any())
+                if (minfos.Any())
                 {
                     PIndex++;
                     ret = true;
@@ -110,11 +110,11 @@ public class DistributionGenerator
             if (pi.IsValid)
             {
                 var priority = (uint)PROCESS_CREATION_FLAGS.HIGH_PRIORITY_CLASS;
-                pi.SetPriority(priority);
+                pi.CurrentPriority = priority;
                 var cpuidstr = "";
                 if (distribution.SharedPhyCPUIDs.Count > 0)
                 {
-                    pi.SetCpuSets([..distribution.SharedPhyCPUIDs, ..distribution.SharedHTCPUIDs]);
+                    pi.CurrentCpuSets = [..distribution.SharedPhyCPUIDs, ..distribution.SharedHTCPUIDs];
                     cpuidstr = $"{distribution.SharedPhyCPUIDs.First() - CPUSetInfo.BeginCPUID}-{distribution.SharedPhyCPUIDs.Last() - CPUSetInfo.BeginCPUID}";
                 }
                 
@@ -138,10 +138,10 @@ public class DistributionGenerator
                 if (ti.IsValid)
                 {
                     var priority = (int)THREAD_PRIORITY.THREAD_PRIORITY_HIGHEST;
-                    ti.SetPriority(priority);
+                    ti.CurrentPriority = priority;
                     var coreIndex = pa.CPUID - CPUSetInfo.BeginCPUID;
-                    ti.SetIdealNumber(coreIndex);
-                    ti.SetCpuSets([pa.CPUID]);
+                    ti.CurrentIdealNumber = coreIndex;
+                    ti.CurrentCpuSets = [pa.CPUID];
                     
                     logstr += $"|{pa.TID,-5}";
                     logstr += $"|{pa.Name,-40}";

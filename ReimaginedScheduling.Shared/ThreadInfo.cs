@@ -7,26 +7,6 @@ namespace ReimaginedScheduling.Shared;
 
 public class ThreadInfo
 {
-    public static IEnumerable<(uint TID, string Name)> PackWithName(List<uint> TIDs)
-    {
-        foreach (uint TID in TIDs)
-        {
-            var ti = new ThreadInfo(TID);
-            if (ti.IsValid)
-                yield return (TID, ti.GetName());
-        }
-    }
-
-    public static IEnumerable<(uint TID, ulong CycleTime)> PackWithCycleTime(List<uint> TIDs)
-    {
-        foreach (uint TID in TIDs)
-        {
-            var ti = new ThreadInfo(TID);
-            if (ti.IsValid)
-                yield return (TID, ti.GetCycleTime());
-        }
-    }
-
     public ThreadInfo(uint TID)
     {
         _hThread = PInvoke.OpenThread_SafeHandle(
@@ -36,53 +16,79 @@ public class ThreadInfo
             THREAD_ACCESS_RIGHTS.THREAD_SET_LIMITED_INFORMATION, false, TID);
     }
 
-    public bool IsInvalid => _hThread.IsInvalid;
     public bool IsValid => !_hThread.IsInvalid;
+    public bool IsInvalid => _hThread.IsInvalid;
 
-    public string GetName()
+    public string CurrentName
     {
-        PInvoke.GetThreadDescription(_hThread, out var ppszThreadDescription);
-        return ppszThreadDescription.ToString() ?? "";
+        get
+        {
+            PInvoke.GetThreadDescription(_hThread, out var ppszThreadDescription);
+            return ppszThreadDescription.ToString() ?? "";
+        }
     }
 
-    public int GetPriority() => PInvoke.GetThreadPriority(_hThread);
-
-    public bool SetPriority(int priority) => PInvoke.SetThreadPriority(_hThread, (THREAD_PRIORITY)priority);
-
-    public nuint GetMask()
+    public int CurrentPriority
     {
-        PInvoke.GetThreadGroupAffinity(_hThread, out var groupAffinity);
-        return groupAffinity.Mask;
+        get => PInvoke.GetThreadPriority(_hThread);
+        set => PInvoke.SetThreadPriority(_hThread, (THREAD_PRIORITY)value);
     }
 
-    public uint[] GetCpuSets()
+    public nuint CurrentMask
     {
-        PInvoke.GetThreadSelectedCpuSets(_hThread, new(), out var requiredIdCount);
-        var cpuids = new uint[requiredIdCount];
-        PInvoke.GetThreadSelectedCpuSets(_hThread, cpuids, out _);
-        return cpuids;
+        get
+        {
+            PInvoke.GetThreadGroupAffinity(_hThread, out var groupAffinity);
+            return groupAffinity.Mask;
+        }
     }
 
-    public bool SetCpuSets(List<uint> CPUIDs) => PInvoke.SetThreadSelectedCpuSets(_hThread, CPUIDs.ToArray());
-
-    public int GetCpuSetMaskCount()
+    public List<uint> CurrentCpuSets
     {
-        PInvoke.GetThreadSelectedCpuSetMasks(_hThread, new(), out var requiredMaskCount);
-        return requiredMaskCount;
+        get
+        {
+            var cpuids = new uint[CurrentCpuSetCount];
+            PInvoke.GetThreadSelectedCpuSets(_hThread, cpuids, out _);
+            return [..cpuids];
+        }
+        set => PInvoke.SetThreadSelectedCpuSets(_hThread, value.ToArray());
     }
 
-    public uint GetIdealNumber()
+    public uint CurrentCpuSetCount
     {
-        PInvoke.GetThreadIdealProcessorEx(_hThread, out var lpIdealProcessor);
-        return lpIdealProcessor.Number;
+        get
+        {
+            PInvoke.GetThreadSelectedCpuSets(_hThread, new(), out var requiredIdCount);
+            return requiredIdCount;
+        }
     }
 
-    public bool SetIdealNumber(uint number) => PInvoke.SetThreadIdealProcessor(_hThread, number) != unchecked((uint)-1);
-
-    public ulong GetCycleTime()
+    public int CurrentCpuSetMaskCount
     {
-        PInvoke.QueryThreadCycleTime(_hThread, out var cycleTime);
-        return cycleTime;
+        get
+        {
+            PInvoke.GetThreadSelectedCpuSetMasks(_hThread, new(), out var requiredMaskCount);
+            return requiredMaskCount;
+        }
+    }
+
+    public uint CurrentIdealNumber
+    {
+        get
+        {
+            PInvoke.GetThreadIdealProcessorEx(_hThread, out var lpIdealProcessor);
+            return lpIdealProcessor.Number;
+        }
+        set => PInvoke.SetThreadIdealProcessor(_hThread, value);
+    }
+
+    public ulong CurrentCycleTime
+    {
+        get
+        {
+            PInvoke.QueryThreadCycleTime(_hThread, out var cycleTime);
+            return cycleTime;
+        }
     }
 
     private readonly SafeFileHandle _hThread = new();

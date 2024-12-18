@@ -58,33 +58,51 @@ public class ProcessInfo
             PROCESS_ACCESS_RIGHTS.PROCESS_SET_LIMITED_INFORMATION, false, PID);
     }
 
-    public bool IsInvalid => _hProcess.IsInvalid;
     public bool IsValid => !_hProcess.IsInvalid;
+    public bool IsInvalid => _hProcess.IsInvalid;
 
-    public uint GetPriority() => PInvoke.GetPriorityClass(_hProcess);
-
-    public bool SetPriority(uint priority) => PInvoke.SetPriorityClass(_hProcess, (PROCESS_CREATION_FLAGS)priority);
-
-    public nuint GetMask()
+    public uint CurrentPriority
     {
-        PInvoke.GetProcessAffinityMask(_hProcess, out var mask, out _);
-        return mask;
+        get => PInvoke.GetPriorityClass(_hProcess);
+        set => PInvoke.SetPriorityClass(_hProcess, (PROCESS_CREATION_FLAGS)value);
     }
 
-    public uint[] GetCpuSets()
+    public nuint CurrentMask
     {
-        PInvoke.GetProcessDefaultCpuSets(_hProcess, new(), out var requiredIdCount);
-        var cpuids = new uint[requiredIdCount];
-        PInvoke.GetProcessDefaultCpuSets(_hProcess, cpuids, out _);
-        return cpuids;
+        get
+        {
+            PInvoke.GetProcessAffinityMask(_hProcess, out var mask, out _);
+            return mask;
+        }
     }
 
-    public bool SetCpuSets(List<uint> CPUIDs) => PInvoke.SetProcessDefaultCpuSets(_hProcess, CPUIDs.ToArray());
-
-    public int GetCpuSetMaskCount()
+    public List<uint> CurrentCpuSets
     {
-        PInvoke.GetProcessDefaultCpuSetMasks(_hProcess, new(), out var requiredMaskCount);
-        return requiredMaskCount;
+        get
+        {
+            var cpuids = new uint[CurrentCpuSetCount];
+            PInvoke.GetProcessDefaultCpuSets(_hProcess, cpuids, out _);
+            return [..cpuids];
+        }
+        set => PInvoke.SetProcessDefaultCpuSets(_hProcess, value.ToArray());
+    }
+
+    public uint CurrentCpuSetCount
+    {
+        get
+        {
+            PInvoke.GetProcessDefaultCpuSets(_hProcess, new(), out var requiredIdCount);
+            return requiredIdCount;
+        }
+    }
+
+    public int CurrentCpuSetMaskCount
+    {
+        get
+        {
+            PInvoke.GetProcessDefaultCpuSetMasks(_hProcess, new(), out var requiredMaskCount);
+            return requiredMaskCount;
+        }
     }
 
     private readonly SafeFileHandle _hProcess = new();
