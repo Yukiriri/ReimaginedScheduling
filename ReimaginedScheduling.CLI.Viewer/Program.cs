@@ -27,7 +27,7 @@ while (true)
             var wi = new WindowInfo();
             wi.SetForegroundHWND();
             pid = wi.GetPID();
-            windowName = wi.GetName();
+            windowName = wi.GetDisplayName(40);
             maintid = wi.GetTID();
         }
     }
@@ -47,12 +47,6 @@ while (true)
             MyConsole.FillLineIfFree(splitstr);
 
             str  = $"|{pid,-5}";
-            var showlength = 0;
-            while ((showlength = windowName.Aggregate(0, (length, next) => length + (next > 127 ? 2 : 1))) > 40)
-            {
-                windowName = windowName[0..(windowName.Length - 1)];
-            }
-            windowName += new string(' ', 40 - showlength);
             str += $"|{windowName}";
             str += $"|{pi.GetPriority(),-8}";
             str += $"|{pi.GetMask(),-16:X}";

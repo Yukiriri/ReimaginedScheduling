@@ -27,14 +27,14 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
     | 1    | GameThread                         |
     | 2    | RenderThread + RHISubmissionThread |
     | 3    | RHIThread                          |
-    | 4-N  | ForegroundWorker                   |
+    | 4-N  | Worker #N                          |
   - ## Unity游戏
-    | 大核 | 线程             |
-    | :--- | :--------------- |
-    | 1    | GameThread       |
-    | 2    | RenderThread     |
-    | 3    | GfxDevicesThread |
-    | 4-N  | ForegroundWorker |
+    | 大核 | 线程                      |
+    | :--- | :------------------------ |
+    | 1    | GameThread                |
+    | 2    | UnityMultiRenderingThread |
+    | 3    | UnityGfxDeviceWorker      |
+    | 4-N  | 其他                      |
   - ## 其他游戏
     | 大核 | 线程         |
     | :--- | :----------- |

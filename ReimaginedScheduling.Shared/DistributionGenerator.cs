@@ -17,99 +17,141 @@ public class DistributionGenerator
     public struct Distribution
     {
         public List<Attribution> PAttributions;
-        public List<uint> SharedCPUIDs;
+        public List<uint> SharedPhyCPUIDs;
+        public List<uint> SharedHTCPUIDs;
     }
     private static readonly Regex[] _UEThreadNames = 
     [
-        new Regex(@"(?<!Audio.*)(Render|RHISubmission).*(T|t)hread"),
+        new Regex(@"(RenderThread \d)|(RHISubmissionThread)"),
         new Regex(@"RHIThread"),
-        new Regex(@"Foreground ?Worker #?1"),
-        new Regex(@"Foreground ?Worker #?2"),
-        new Regex(@"Foreground ?Worker #?3"),
-        new Regex(@"Foreground ?Worker #?4"),
-        new Regex(@"Foreground ?Worker #?5"),
+        new Regex(@"ground Worker #0(?!.+)"),
+        new Regex(@"ground Worker #1(?!.+)"),
+        new Regex(@"ground Worker #2(?!.+)"),
+        new Regex(@"ground Worker #3(?!.+)"),
+        new Regex(@"ground Worker #4(?!.+)"),
     ];
     private static readonly Regex[] _UnityThreadNames = 
     [
-        new Regex(@"Unity.*Render.*(T|t)hread"),
-        new Regex(@"UnityGfxDevicesThread"),
-        new Regex(@"Foreground ?Worker #?1"),
-        new Regex(@"Foreground ?Worker #?2"),
-        new Regex(@"Foreground ?Worker #?3"),
-        new Regex(@"Foreground ?Worker #?4"),
-        new Regex(@"Foreground ?Worker #?5"),
+        new Regex(@"UnityMultiRenderingThread"),
+        new Regex(@"UnityGfxDeviceWorker"),
+    ];
+    private static readonly Regex[] _OtherThreadNames = 
+    [
+        new Regex(@"Render.*(T|t)hread"),
     ];
 
     public static Distribution Generate(uint mainTID, List<uint> TIDs)
     {
-        var PCores = CPUSetInfo.PhysicalPCores[0..];
+        var PhyPCores = CPUSetInfo.PhysicalPCores[0..];
         var HTs = CPUSetInfo.HyperThreads[0..];
         var ECores = CPUSetInfo.ECores[0..];
 
-        var thinfos = ThreadInfo.PackWithName(TIDs);
-        var PAttributions = new List<Attribution>()
+        var distribution = new Distribution
         {
-            new("GameThread", mainTID, PCores[0])
+            PAttributions =
+            [
+                new("GameThread", mainTID, PhyPCores[0])
+            ]
         };
-        var PIndex = PAttributions.Count;
-        void arrangeThread(Regex[] regexs)
+        var PIndex = distribution.PAttributions.Count;
+        
+        var thinfos = ThreadInfo.PackWithName(TIDs);
+        bool arrangeThread(Regex[] regexs)
         {
+            var ret = false;
             foreach (var r in regexs)
             {
                 var thifs = thinfos.Where(x => r.IsMatch(x.Name));
                 foreach (var thif in thifs)
                 {
-                    if (PIndex < PCores.Count)
+                    if (PIndex < PhyPCores.Count)
                     {
-                        PAttributions.Add(new(thif.Name, thif.TID, PCores[PIndex]));
+                        distribution.PAttributions.Add(new(thif.Name, thif.TID, PhyPCores[PIndex]));
                     }
                 }
                 if (thifs.Any())
+                {
                     PIndex++;
+                    ret = true;
+                }
             }
+            return ret;
         }
-        arrangeThread(_UEThreadNames);
-        arrangeThread(_UnityThreadNames);
-
-        var SharedCPUIDs = new List<uint>();
-        var sharedIndex = PIndex;
-        if (PCores.Count < 12 && ECores.Count == 0)
-            sharedIndex = Math.Min(sharedIndex, PCores.Count / 2);
-        SharedCPUIDs = [..SharedCPUIDs, ..PCores[sharedIndex..]];
-        if (PCores.Count < 12 && ECores.Count == 0 && HTs.Count > 0)
-            SharedCPUIDs = [..SharedCPUIDs, ..HTs[sharedIndex..]];
-        SharedCPUIDs = [..SharedCPUIDs, ..ECores];
-
-        return new()
+        List<Regex[]> regs = [_UEThreadNames, _UnityThreadNames, _OtherThreadNames];
+        foreach (var reg in regs)
         {
-            PAttributions = PAttributions,
-            SharedCPUIDs = SharedCPUIDs,
-        };
+            if (arrangeThread(reg))
+                break;
+        }
+
+        var sharedIndex = PIndex;
+        if (PhyPCores.Count < 12 && ECores.Count == 0)
+        {
+            sharedIndex = Math.Min(sharedIndex, PhyPCores.Count / 2);
+            if (HTs.Count > 0)
+                distribution.SharedHTCPUIDs = [..HTs[sharedIndex..]];
+        }
+        distribution.SharedPhyCPUIDs = [..PhyPCores[sharedIndex..], ..ECores];
+
+        return distribution;
     }
 
-    public static void ToggleScheduling(uint pid, Distribution distribution, bool isRedistribution)
+    public static void ToggleScheduling(uint pid, string windowName, Distribution distribution, bool isRedistribution)
     {
-        foreach (var pa in distribution.PAttributions)
+        var logstr = "\n";
         {
-            var ti = new ThreadInfo(pa.TID);
-            if (ti.IsValid)
+            var str = $"|PID  |{"Name",-40}|Priority|CPU    |";
+            var splitstr = new string('-', str.Length);
+            logstr += splitstr + '\n';
+            logstr += str + '\n';
+            logstr += splitstr + '\n';
+
+            var pi = new ProcessInfo(pid);
+            if (pi.IsValid)
             {
-                ti.SetPriority((int)THREAD_PRIORITY.THREAD_PRIORITY_HIGHEST);
-                var coreIndex = pa.CPUID - CPUSetInfo.BeginCPUID;
-                ti.SetIdealNumber(coreIndex);
-                ti.SetCpuSets([pa.CPUID]);
-                MyLogger.Info($"CPU{coreIndex,-2} = {pa.TID,-5} \"{pa.Name}\"");
+                var priority = (uint)PROCESS_CREATION_FLAGS.HIGH_PRIORITY_CLASS;
+                pi.SetPriority(priority);
+                var cpuidstr = "";
+                if (distribution.SharedPhyCPUIDs.Count > 0)
+                {
+                    pi.SetCpuSets([..distribution.SharedPhyCPUIDs, ..distribution.SharedHTCPUIDs]);
+                    cpuidstr = $"{distribution.SharedPhyCPUIDs.First() - CPUSetInfo.BeginCPUID}-{distribution.SharedPhyCPUIDs.Last() - CPUSetInfo.BeginCPUID}";
+                }
+                
+                logstr += $"|{pid,-5}";
+                logstr += $"|{windowName}";
+                logstr += $"|{priority,-8}";
+                logstr += $"|{cpuidstr,-7}";
+                logstr += "|\n";
             }
+            logstr += splitstr + '\n';
         }
-        var pi = new ProcessInfo(pid);
-        if (pi.IsValid)
         {
-            pi.SetPriority((uint)PROCESS_CREATION_FLAGS.HIGH_PRIORITY_CLASS);
-            if (distribution.SharedCPUIDs.Count > 0)
+            var str = $"|TID  |{"Name",-40}|Priority|CPU    |";
+            var splitstr = new string('-', str.Length);
+            logstr += splitstr + '\n';
+            logstr += str + '\n';
+            logstr += splitstr + '\n';
+            foreach (var pa in distribution.PAttributions)
             {
-                pi.SetCpuSets(distribution.SharedCPUIDs);
-                MyLogger.Info($"Shared = CPU{string.Join(" CPU", distribution.SharedCPUIDs.Select(x => x - CPUSetInfo.BeginCPUID))}");
+                var ti = new ThreadInfo(pa.TID);
+                if (ti.IsValid)
+                {
+                    var priority = (int)THREAD_PRIORITY.THREAD_PRIORITY_HIGHEST;
+                    ti.SetPriority(priority);
+                    var coreIndex = pa.CPUID - CPUSetInfo.BeginCPUID;
+                    ti.SetIdealNumber(coreIndex);
+                    ti.SetCpuSets([pa.CPUID]);
+                    
+                    logstr += $"|{pa.TID,-5}";
+                    logstr += $"|{pa.Name,-40}";
+                    logstr += $"|{priority,-8}";
+                    logstr += $"|{coreIndex,-7}";
+                    logstr += "|\n";
+                }
             }
+            logstr += splitstr + '\n';
         }
+        MyLogger.Info(logstr);
     }
 }

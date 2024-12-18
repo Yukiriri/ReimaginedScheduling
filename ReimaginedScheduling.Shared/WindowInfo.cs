@@ -1,3 +1,4 @@
+using System.Linq;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 
@@ -22,6 +23,18 @@ public class WindowInfo
                 windowName = windowName.TrimEnd('\0');
             }
         }
+        return windowName;
+    }
+
+    public string GetDisplayName(int maxShowLength)
+    {
+        var windowName = GetName();
+        var showLength = 0;
+        while ((showLength = windowName.Aggregate(0, (length, next) => length + (next > 127 ? 2 : 1))) > maxShowLength)
+        {
+            windowName = windowName[0..(windowName.Length - 1)];
+        }
+        windowName += new string(' ', maxShowLength - showLength);
         return windowName;
     }
 

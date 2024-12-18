@@ -11,9 +11,8 @@ var maintid = 0u;
 
 void ToggleScheduling()
 {
-    MyLogger.Info($"{windowName}");
     var distribution = DistributionGenerator.Generate(maintid, ProcessInfo.GetTIDs(pid));
-    DistributionGenerator.ToggleScheduling(pid, distribution, HotKey.IsPageUp);
+    DistributionGenerator.ToggleScheduling(pid, windowName, distribution, HotKey.IsPageUp);
     Thread.Sleep(2000);
     Console.Write(Config.ConsoleSplitRow);
 }
@@ -35,7 +34,7 @@ else
                 var wi = new WindowInfo();
                 wi.SetForegroundHWND();
                 pid = wi.GetPID();
-                windowName = wi.GetName();
+                windowName = wi.GetDisplayName(40);
                 maintid = wi.GetTID();
             }
         }
