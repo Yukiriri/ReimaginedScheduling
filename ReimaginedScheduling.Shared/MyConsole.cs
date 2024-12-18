@@ -11,6 +11,13 @@ public class MyConsole
             Console.Write(new string(' ', Console.WindowWidth - message.Length));
     }
 
+    public static void FillLineIfFree(string message = "")
+    {
+        var (_, Top) = Console.GetCursorPosition();
+        if (Top < Console.WindowHeight - 1)
+            FillLine(message);
+    }
+
     public static void FillConsole()
     {
         var (Left, Top) = Console.GetCursorPosition();

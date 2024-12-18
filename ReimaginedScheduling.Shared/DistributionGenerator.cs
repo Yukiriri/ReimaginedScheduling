@@ -19,20 +19,32 @@ public class DistributionGenerator
         public List<Attribution> PAttributions;
         public List<uint> SharedCPUIDs;
     }
-    private static readonly Regex[] _MergerThreadNames = 
+    private static readonly Regex[] _UEThreadNames = 
     [
-        new Regex(@"(Render|Audio|RHISubmission).*(T|t)hread"),
+        new Regex(@"(?<!Audio.*)(Render|RHISubmission).*(T|t)hread"),
+        new Regex(@"RHIThread"),
+        new Regex(@"Foreground ?Worker #?1"),
+        new Regex(@"Foreground ?Worker #?2"),
+        new Regex(@"Foreground ?Worker #?3"),
+        new Regex(@"Foreground ?Worker #?4"),
+        new Regex(@"Foreground ?Worker #?5"),
     ];
-    private static readonly Regex[] _IndependenceThreadNames = 
+    private static readonly Regex[] _UnityThreadNames = 
     [
-        new Regex("(RHI|GfxDevices)Thread"),
-        new Regex("(?<!(P|p)ool.*)Foreground ?Worker"),
+        new Regex(@"Unity.*Render.*(T|t)hread"),
+        new Regex(@"UnityGfxDevicesThread"),
+        new Regex(@"Foreground ?Worker #?1"),
+        new Regex(@"Foreground ?Worker #?2"),
+        new Regex(@"Foreground ?Worker #?3"),
+        new Regex(@"Foreground ?Worker #?4"),
+        new Regex(@"Foreground ?Worker #?5"),
     ];
 
     public static Distribution Generate(uint mainTID, List<uint> TIDs)
     {
         var PCores = CPUSetInfo.PhysicalPCores[0..];
         var HTs = CPUSetInfo.HyperThreads[0..];
+        var ECores = CPUSetInfo.ECores[0..];
 
         var thinfos = ThreadInfo.PackWithName(TIDs);
         var PAttributions = new List<Attribution>()
@@ -40,35 +52,33 @@ public class DistributionGenerator
             new("GameThread", mainTID, PCores[0])
         };
         var PIndex = PAttributions.Count;
-        foreach (var tn in _MergerThreadNames)
+        void arrangeThread(Regex[] regexs)
         {
-            foreach (var thi in thinfos.Where(x => tn.IsMatch(x.Name)))
+            foreach (var r in regexs)
             {
-                if (PIndex < PCores.Count)
+                var thifs = thinfos.Where(x => r.IsMatch(x.Name));
+                foreach (var thif in thifs)
                 {
-                    PAttributions.Add(new(thi.Name, thi.TID, PCores[PIndex]));
+                    if (PIndex < PCores.Count)
+                    {
+                        PAttributions.Add(new(thif.Name, thif.TID, PCores[PIndex]));
+                    }
                 }
-            }
-            PIndex++;
-        }
-        foreach (var tn in _IndependenceThreadNames)
-        {
-            foreach (var thi in thinfos.Where(x => tn.IsMatch(x.Name)))
-            {
-                if (PIndex < PCores.Count)
-                {
-                    PAttributions.Add(new(thi.Name, thi.TID, PCores[PIndex]));
+                if (thifs.Any())
                     PIndex++;
-                }
             }
         }
+        arrangeThread(_UEThreadNames);
+        arrangeThread(_UnityThreadNames);
 
         var SharedCPUIDs = new List<uint>();
-        var sharedIndex = Math.Min(PAttributions.Count, PCores.Count / 2);
-        SharedCPUIDs = [..PCores[sharedIndex..]];
-        if (PCores.Count < 12 && HTs.Count > 0)
+        var sharedIndex = PIndex;
+        if (PCores.Count < 12 && ECores.Count == 0)
+            sharedIndex = Math.Min(sharedIndex, PCores.Count / 2);
+        SharedCPUIDs = [..SharedCPUIDs, ..PCores[sharedIndex..]];
+        if (PCores.Count < 12 && ECores.Count == 0 && HTs.Count > 0)
             SharedCPUIDs = [..SharedCPUIDs, ..HTs[sharedIndex..]];
-        SharedCPUIDs = [..SharedCPUIDs, ..CPUSetInfo.ECores];
+        SharedCPUIDs = [..SharedCPUIDs, ..ECores];
 
         return new()
         {
@@ -88,7 +98,7 @@ public class DistributionGenerator
                 var coreIndex = pa.CPUID - CPUSetInfo.BeginCPUID;
                 ti.SetIdealNumber(coreIndex);
                 ti.SetCpuSets([pa.CPUID]);
-                MyLogger.Info($"CPU{coreIndex,-2} = {pa.TID,-5} [{pa.Name}]");
+                MyLogger.Info($"CPU{coreIndex,-2} = {pa.TID,-5} \"{pa.Name}\"");
             }
         }
         var pi = new ProcessInfo(pid);
@@ -98,7 +108,7 @@ public class DistributionGenerator
             if (distribution.SharedCPUIDs.Count > 0)
             {
                 pi.SetCpuSets(distribution.SharedCPUIDs);
-                MyLogger.Info($"DefaultSets = CPU{string.Join(" CPU", distribution.SharedCPUIDs.Select(x => x - CPUSetInfo.BeginCPUID))}");
+                MyLogger.Info($"Shared = CPU{string.Join(" CPU", distribution.SharedCPUIDs.Select(x => x - CPUSetInfo.BeginCPUID))}");
             }
         }
     }

@@ -21,24 +21,32 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
 
 # 实现原理
 - ## 线程排布
-  - ## UE和Unity游戏
-    | 核心 | 线程                                  |
-    | :--- | :------------------------------------ |
-    | 1    | GameThread                            |
-    | 2    | Render / Audio / RHISubmission Thread |
-    | 3    | RHI / GfxDevices Thread               |
-    | 4-N  | Foreground Worker                     |
+  - ## UE游戏
+    | 大核 | 线程                               |
+    | :--- | :--------------------------------- |
+    | 1    | GameThread                         |
+    | 2    | RenderThread + RHISubmissionThread |
+    | 3    | RHIThread                          |
+    | 4-N  | ForegroundWorker                   |
+  - ## Unity游戏
+    | 大核 | 线程             |
+    | :--- | :--------------- |
+    | 1    | GameThread       |
+    | 2    | RenderThread     |
+    | 3    | GfxDevicesThread |
+    | 4-N  | ForegroundWorker |
   - ## 其他游戏
-    | 核心 | 线程         |
+    | 大核 | 线程         |
     | :--- | :----------- |
     | 1    | MainThread   |
     | 2    | RenderThread |
     | 3-N  | 其他         |
-- ## 核心使用策划
-    | 大核数量 | 可独占范围 | 最低共享范围   |
-    | :------- | :--------- | :------------- |
-    | <12      | 1-N/2      | N/2-N + 超线程 |
-    | >=12     | 1-N/2      | N/2-N          |
+- ## 核心配重策划
+    | 大核数 | 小核数 | 大核可独占范围 | 最低共享范围   |
+    | :----- | :----- | :------------- | :------------- |
+    | <12    | 0      | 1-N/2          | N/2-N + 超线程 |
+    | <12    | >0     | 1-N            | >N             |
+    | >=12   | 0      | 1-N/2          | N/2-N          |
 
 # 食用效果
 - ### 食用前

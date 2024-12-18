@@ -5,9 +5,9 @@ namespace ReimaginedScheduling.Shared;
 
 public class WindowInfo
 {
-    public bool SetForegroundHWND() => (_hWND = PInvoke.GetForegroundWindow()).IsNull;
+    public bool SetForegroundHWND() => !(_hWND = PInvoke.GetForegroundWindow()).IsNull;
 
-    public bool SetDesktopHWND() => (_hWND = PInvoke.GetDesktopWindow()).IsNull;
+    public bool SetDesktopHWND() => !(_hWND = PInvoke.GetDesktopWindow()).IsNull;
 
     public unsafe string GetName()
     {
@@ -17,7 +17,10 @@ public class WindowInfo
         fixed (char* textPtr = text)
         {
             if (PInvoke.GetWindowText(_hWND, textPtr, textLength) > 0)
+            {
                 windowName = new string(text);
+                windowName = windowName.TrimEnd('\0');
+            }
         }
         return windowName;
     }

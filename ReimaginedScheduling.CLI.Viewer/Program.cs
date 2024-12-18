@@ -42,9 +42,9 @@ while (true)
         {
             var str = $"|PID  |{"Name",-40}|Priority|{"Mask",-16}|CpuSets|CpuSetMasks|MainTID|";
             var splitstr = new string('-', str.Length);
-            MyConsole.FillLine(splitstr);
-            MyConsole.FillLine(str);
-            MyConsole.FillLine(splitstr);
+            MyConsole.FillLineIfFree(splitstr);
+            MyConsole.FillLineIfFree(str);
+            MyConsole.FillLineIfFree(splitstr);
 
             str  = $"|{pid,-5}";
             var showlength = 0;
@@ -61,7 +61,7 @@ while (true)
             str += $"|{maintid,-7}";
             str += "|";
             Console.Write(str + new string(' ', Math.Max(0, Console.WindowWidth - splitstr.Length)));
-            MyConsole.FillLine(splitstr);
+            MyConsole.FillLineIfFree(splitstr);
         }
         else
         {
@@ -72,9 +72,9 @@ while (true)
         {
             var str = $"|TID  |{"Name",-40}|Priority|{"Mask",-16}|CpuSets|CpuSetMasks|Ideal|{"CycleTime",-21}|";
             var splitstr = new string('-', str.Length);
-            MyConsole.FillLine(splitstr);
-            MyConsole.FillLine(str);
-            MyConsole.FillLine(splitstr);
+            MyConsole.FillLineIfFree(splitstr);
+            MyConsole.FillLineIfFree(str);
+            MyConsole.FillLineIfFree(splitstr);
 
             var ticts = ThreadInfo.PackWithCycleTime(ProcessInfo.GetTIDs(pid));
             if (isSortCycleTime)
@@ -96,16 +96,16 @@ while (true)
                     str += $"|{ti.GetIdealNumber(),-5}";
                     str += $"|{tict.CycleTime,-21}";
                     str += "|";
-                    MyConsole.FillLine(str);
+                    MyConsole.FillLineIfFree(str);
                 }
             }
-            MyConsole.FillLine(splitstr);
+            MyConsole.FillLineIfFree(splitstr);
         }
 
-        MyConsole.FillLine();
-        MyConsole.FillLine("'Q': Quit");
-        MyConsole.FillLine("'S': Sort CycleTime");
-        MyConsole.FillLine("'N': Toggle Nameless");
+        MyConsole.FillLineIfFree();
+        MyConsole.FillLineIfFree("'Q': Quit");
+        MyConsole.FillLineIfFree("'S': Sort CycleTime");
+        MyConsole.FillLineIfFree("'N': Toggle Nameless");
         MyConsole.FillConsole();
         while (Console.KeyAvailable)
         {
