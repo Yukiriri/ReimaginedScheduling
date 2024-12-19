@@ -8,10 +8,10 @@ namespace ReimaginedScheduling.Shared;
 
 public class DistributionGenerator
 {
-    public struct Attribution(string Name, uint TID, uint CPUID)
+    public struct Attribution(uint TID, string Name, uint CPUID)
     {
-        public string Name = Name;
         public uint TID = TID;
+        public string Name = Name;
         public uint CPUID = CPUID;
     }
     public struct Distribution
@@ -50,40 +50,36 @@ public class DistributionGenerator
         {
             PAttributions =
             [
-                new("GameThread", mainTID, PhyPCores[0])
+                new(mainTID, "GameThread", PhyPCores[0])
             ]
         };
         var PIndex = distribution.PAttributions.Count;
         
-        var thinfos = ProcessInfo.GetTIDs(PID).Select(x => (TID: x, ti: new ThreadInfo(x)));
-        bool arrangeThread(Regex[] regs)
+        var thinfos = ProcessInfo.GetTIDs(PID)
+            .Select(x => (TID: x, ti: new ThreadInfo(x)))
+            .Where(x => x.ti.IsValid);
+        List<Regex[]> regexs = [_UEThreadNames, _UnityThreadNames, _OtherThreadNames];
+        foreach (var regs in regexs)
         {
-            var ret = false;
+            var isMatched = false;
             foreach (var reg in regs)
             {
-                var minfos = thinfos.Where(x => x.ti.IsValid && reg.IsMatch(x.ti.CurrentName));
-                foreach (var minfo in minfos)
+                if (PIndex < PhyPCores.Count)
                 {
-                    if (PIndex < PhyPCores.Count)
+                    var mthinfos = thinfos
+                        .Where(x => reg.IsMatch(x.ti.CurrentName))
+                        .Select(x => new Attribution(x.TID, x.ti.CurrentName, PhyPCores[PIndex]));
+                    if (mthinfos.Any())
                     {
-                        distribution.PAttributions.Add(new(minfo.ti.CurrentName, minfo.TID, PhyPCores[PIndex]));
+                        distribution.PAttributions = [..distribution.PAttributions, ..mthinfos];
+                        PIndex++;
+                        isMatched = true;
                     }
                 }
-                if (minfos.Any())
-                {
-                    PIndex++;
-                    ret = true;
-                }
             }
-            return ret;
-        }
-        List<Regex[]> regs = [_UEThreadNames, _UnityThreadNames, _OtherThreadNames];
-        foreach (var reg in regs)
-        {
-            if (arrangeThread(reg))
+            if (isMatched)
                 break;
         }
-
         var sharedIndex = PIndex;
         if (PhyPCores.Count < 12 && ECores.Count == 0)
         {

@@ -1,0 +1,10 @@
+GetForegroundWindow
+GetDesktopWindow
+GetCursorInfo
+IsWindow
+
+PdhOpenQuery
+PdhCloseQuery
+PdhAddCounter
+PdhCollectQueryData
+PdhGetFormattedCounterArray

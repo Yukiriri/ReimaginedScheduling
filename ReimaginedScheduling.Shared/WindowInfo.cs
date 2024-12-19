@@ -6,9 +6,10 @@ namespace ReimaginedScheduling.Shared;
 
 public class WindowInfo
 {
-    public bool SetForegroundHWND() => !(_hWND = PInvoke.GetForegroundWindow()).IsNull;
-
-    public bool SetDesktopHWND() => !(_hWND = PInvoke.GetDesktopWindow()).IsNull;
+    public WindowInfo(nint hWND)
+    {
+        _hWND = (HWND)hWND;
+    }
 
     public unsafe string GetName()
     {
@@ -57,5 +58,5 @@ public class WindowInfo
         return (rect.Width, rect.Height);
     }
 
-    private HWND _hWND = HWND.Null;
+    private readonly HWND _hWND = HWND.Null;
 }

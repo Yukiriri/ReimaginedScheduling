@@ -1,5 +1,7 @@
 ﻿using System;
 using ReimaginedScheduling.Shared;
+using Windows.Win32;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace ReimaginedScheduling.CLI.Auto;
 
@@ -10,24 +12,24 @@ public class GameProcessManager
 
     public GameProcessManager()
     {
-        var wi = new WindowInfo();
-        wi.SetDesktopHWND();
+        var wi = new WindowInfo(PInvoke.GetDesktopWindow());
         _desktopSize = wi.GetSize();
     }
 
     public bool IsGameProcess()
     {
-        var wi = new WindowInfo();
-        if (!wi.SetForegroundHWND())
+        var hwnd = PInvoke.GetForegroundWindow();
+        if (!hwnd.IsNull)
             return false;
-        
-        // var wndSize = wi.GetSize();
-        // if (wndSize != _desktopSize)
-        // {
-        //     var ci = new CURSORINFO();
-        //     if (PInvoke.GetCursorInfo(ref ci) && ci.flags != 0)
-        //         return false;
-        // }
+
+        var wi = new WindowInfo(hwnd);
+        var wndSize = wi.GetSize();
+        if (wndSize != _desktopSize)
+        {
+            var ci = new CURSORINFO();
+            if (PInvoke.GetCursorInfo(ref ci) && ci.flags != 0)
+                return false;
+        }
         var pid = wi.GetPID();
         if (pid != 0)
         {

@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using Windows.Win32;
 using Windows.Win32.System.Performance;
 
-namespace ReimaginedScheduling.Shared;
+namespace ReimaginedScheduling.CLI.Auto;
 
 public class PerformanceMonitor
 {
@@ -39,22 +39,19 @@ public class PerformanceMonitor
             .Aggregate(0ul, (sum, next) => sum + (ulong)next.value.Anonymous.largeValue);
     }
 
-    private (string name, PDH_FMT_COUNTERVALUE value)[] GetCounterValue(string counterName, PDH_FMT counterType)
+    private unsafe (string name, PDH_FMT_COUNTERVALUE value)[] GetCounterValue(string counterName, PDH_FMT counterType)
     {
         if (_counterList.TryGetValue(counterName, out var hCounter))
         {
-            unsafe
+            var arrSize = 0u;
+            if (PInvoke.PdhGetFormattedCounterArray(hCounter, counterType, ref arrSize, out var arrCount, null) == 0x800007D2)
             {
-                var arrSize = 0u;
-                if (PInvoke.PdhGetFormattedCounterArray(hCounter, counterType, ref arrSize, out var arrCount, null) == 0x800007D2)
+                var arr = new PDH_FMT_COUNTERVALUE_ITEM_W[arrSize / sizeof(PDH_FMT_COUNTERVALUE_ITEM_W)];
+                fixed (PDH_FMT_COUNTERVALUE_ITEM_W* ptr = arr)
                 {
-                    var arr = new PDH_FMT_COUNTERVALUE_ITEM_W[arrSize / sizeof(PDH_FMT_COUNTERVALUE_ITEM_W)];
-                    fixed (PDH_FMT_COUNTERVALUE_ITEM_W* ptr = arr)
+                    if (PInvoke.PdhGetFormattedCounterArray(hCounter, counterType, ref arrSize, out _, ptr) == 0)
                     {
-                        if (PInvoke.PdhGetFormattedCounterArray(hCounter, counterType, ref arrSize, out _, ptr) == 0)
-                        {
-                            return arr[0..(int)arrCount].Select(x => (x.szName.ToString(), x.FmtValue)).ToArray();
-                        }
+                        return arr[0..(int)arrCount].Select(x => (x.szName.ToString(), x.FmtValue)).ToArray();
                     }
                 }
             }

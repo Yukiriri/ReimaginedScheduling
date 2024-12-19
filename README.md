@@ -15,64 +15,41 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
 
 </div>
 
-> [!IMPORTANT]
-> 如果出现这条提示，就说明项目正在大型重新设计，近期的Release构建将是未完型版本，功能还残缺  
-> 先重点看readme的实现合理性，Release构建仅为尝鲜  
-
 # 实现原理
-- ## 线程排布
-  - ## UE游戏
-    | 大核 | 线程                               |
-    | :--- | :--------------------------------- |
-    | 1    | GameThread                         |
-    | 2    | RenderThread + RHISubmissionThread |
-    | 3    | RHIThread                          |
-    | 4-N  | Worker #N                          |
-  - ## Unity游戏
-    | 大核 | 线程                      |
-    | :--- | :------------------------ |
-    | 1    | GameThread                |
-    | 2    | UnityMultiRenderingThread |
-    | 3    | UnityGfxDeviceWorker      |
-    | 4-N  | 其他                      |
-  - ## 其他游戏
-    | 大核 | 线程         |
-    | :--- | :----------- |
-    | 1    | MainThread   |
-    | 2    | RenderThread |
-    | 3-N  | 其他         |
-- ## 核心配重策划
-    | 大核数 | 小核数 | 大核可独占范围 | 最低共享范围   |
-    | :----- | :----- | :------------- | :------------- |
-    | <12    | 0      | 1-N/2          | N/2-N + 超线程 |
-    | <12    | >0     | 1-N            | >N             |
-    | >=12   | 0      | 1-N/2          | N/2-N          |
+- [核心与线程规划](./md/thread.md)
 
 # 食用效果
-- ### 食用前
-![](./md/img/before.png)
-- ### 食用后
-![](./md/img/after.png)
+  <details><summary>食用前</summary>
+
+  ![](./md/img/before.png)
+  </details>
+  <details><summary>食用后</summary>
+
+  ![](./md/img/after.png)
+  </details>
 
 # 食用方式
 1. 前往 [Release] 选择下载自动构建的exe  
-2. 各exe使用方式  
-  - `ReimaginedScheduling.CLI.Modifier.exe`  
-    - 方式1  
-      传入参数运行（适合搭配快捷方式）  
-      ```
-      start "...\ReimaginedScheduling.CLI.Modifier.exe" "...\游戏.exe"
-      ```
-    - 方式2  
-    1. 直接运行并保持，直到不需要玩游戏  
-    2. 开始玩游戏  
-    3. 在游戏中按下提示的快捷键  
-  - `ReimaginedScheduling.CLI.Viewer.exe`  
-    这个是给专业人士采集线程数据并向我提交建议用的  
-
 > [!NOTE]
 > 总物理核心低于4核就非常不建议使用了，正如我所说，我的程序是让高端CPU更上一层楼  
 > 除非尝试运行后确认可以缓解某些瓶颈，不然大概率在低核心CPU上会是负优化  
+
+1. 各exe使用方式  
+  - `ReimaginedScheduling.CLI.Manual.exe`  
+    1. 直接运行并保持，直到不需要使用  
+    2. 开始玩游戏  
+    3. 在游戏中按下提示的快捷键  
+  - `ReimaginedScheduling.CLI.Start.exe`(未完成)  
+    传入参数运行（适合搭配快捷方式）  
+    ```
+    "...\ReimaginedScheduling.CLI.Start.exe" "...\游戏.exe"
+    ```
+  - `ReimaginedScheduling.CLI.Viewer.exe`  
+    给专业人士采集线程数据并向我提交建议用的  
+  - `ReimaginedScheduling.CLI.Modifier.exe`(未完成)  
+    与Viewer组合使用  
+> [!NOTE]
+> 游戏线程修改的时效性持续到进程结束，非持久修改  
 
 # 计划功能
 - 控制面板用户UI

@@ -2,10 +2,12 @@
 using System;
 using System.Linq;
 using System.Threading;
+using Windows.System;
+using Windows.Win32;
 
-Console.SetWindowSize(Console.WindowWidth + 10, Console.WindowHeight);
 ProcessRequire.EnableSeDebug();
 ProcessRequire.SetLastCpu();
+Console.SetWindowSize(Console.WindowWidth + 10, Console.WindowHeight);
 
 bool isSortCycleTime = true;
 bool isHideNameless = true;
@@ -22,10 +24,9 @@ while (true)
     var maintid = 0u;
     for (; pid == 0; Thread.Sleep(1))
     {
-        if (HotKey.IsCtrl && HotKey.IsInsert)
+        if (HotKey.IsCtrl && HotKey.IsKeyDown(VirtualKey.Insert))
         {
-            var wi = new WindowInfo();
-            wi.SetForegroundHWND();
+            var wi = new WindowInfo(PInvoke.GetForegroundWindow());
             pid = wi.GetPID();
             windowName = wi.GetDisplayName(40);
             maintid = wi.GetTID();
@@ -72,7 +73,7 @@ while (true)
 
             var thinfos = ProcessInfo.GetTIDs(pid).Select(x => (TID: x, ti: new ThreadInfo(x)));
             if (isSortCycleTime)
-                thinfos = [..thinfos.OrderByDescending(x => x.ti.CurrentCycleTime)];
+                thinfos = thinfos.OrderByDescending(x => x.ti.CurrentCycleTime);
             foreach (var thinfo in thinfos)
             {
                 if (thinfo.ti.IsValid)
