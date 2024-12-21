@@ -25,6 +25,6 @@
   - ## 其他游戏
     | 大核 | 线程         |
     | :--- | :----------- |
-    | 1    | MainThread   |
+    | 1    | GameThread   |
     | 2    | RenderThread |
     | 3-N  | 其他         |
