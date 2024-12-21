@@ -92,62 +92,59 @@ public class DistributionGenerator
         return distribution;
     }
 
-    public static void ToggleScheduling(uint pid, string windowName, Distribution distribution, bool isRedistribution)
+    public static bool ToggleScheduling(uint pid, string windowName, Distribution distribution, bool isRedistribution)
     {
+        var pi = new ProcessInfo(pid);
+        if (pi.IsInvalid)
+            return false;
+        
         var logstr = "\n";
-        {
-            var str = $"|PID  |{"Name",-40}|Priority|CPU    |";
-            var splitstr = new string('-', str.Length);
-            logstr += splitstr + '\n';
-            logstr += str + '\n';
-            logstr += splitstr + '\n';
+        var headerstr = $"|ID   |{"Name",-40}|Priority|CPU    |";
+        var headersplitstr = new string('-', headerstr.Length);
+        logstr += headersplitstr + '\n';
+        logstr += headerstr + '\n';
+        logstr += headersplitstr + '\n';
 
-            var pi = new ProcessInfo(pid);
-            if (pi.IsValid)
+        {
+            var priority = (uint)PROCESS_CREATION_FLAGS.HIGH_PRIORITY_CLASS;
+            pi.CurrentPriority = priority;
+            var cpuidstr = "";
+            if (distribution.SharedPhyCPUIDs.Count > 0)
             {
-                var priority = (uint)PROCESS_CREATION_FLAGS.HIGH_PRIORITY_CLASS;
-                pi.CurrentPriority = priority;
-                var cpuidstr = "";
-                if (distribution.SharedPhyCPUIDs.Count > 0)
-                {
-                    pi.CurrentCpuSets = [..distribution.SharedPhyCPUIDs, ..distribution.SharedHTCPUIDs];
-                    cpuidstr = $"{distribution.SharedPhyCPUIDs.First() - CPUSetInfo.BeginCPUID}-{distribution.SharedPhyCPUIDs.Last() - CPUSetInfo.BeginCPUID}";
-                }
+                pi.CurrentCpuSets = [..distribution.SharedPhyCPUIDs, ..distribution.SharedHTCPUIDs];
+                var beginindex = distribution.SharedPhyCPUIDs.First() - CPUSetInfo.BeginCPUID;
+                var endindex = distribution.SharedPhyCPUIDs.Last() - CPUSetInfo.BeginCPUID;
+                cpuidstr = $"{beginindex}-{endindex}";
+            }
+            
+            logstr += $"|{pid,-5}";
+            logstr += $"|{windowName}";
+            logstr += $"|{priority,-8}";
+            logstr += $"|{cpuidstr,-7}";
+            logstr += "|\n";
+            logstr += headersplitstr + '\n';
+        }
+        foreach (var pa in distribution.PAttributions)
+        {
+            var ti = new ThreadInfo(pa.TID);
+            if (ti.IsValid)
+            {
+                var priority = (int)THREAD_PRIORITY.THREAD_PRIORITY_HIGHEST;
+                ti.CurrentPriority = priority;
+                var coreIndex = pa.CPUID - CPUSetInfo.BeginCPUID;
+                ti.CurrentIdealNumber = coreIndex;
+                ti.CurrentCpuSets = [pa.CPUID];
                 
-                logstr += $"|{pid,-5}";
-                logstr += $"|{windowName}";
+                logstr += $"|{pa.TID,-5}";
+                logstr += $"|{pa.Name,-40}";
                 logstr += $"|{priority,-8}";
-                logstr += $"|{cpuidstr,-7}";
+                logstr += $"|{coreIndex,-7}";
                 logstr += "|\n";
             }
-            logstr += splitstr + '\n';
         }
-        {
-            var str = $"|TID  |{"Name",-40}|Priority|CPU    |";
-            var splitstr = new string('-', str.Length);
-            logstr += splitstr + '\n';
-            logstr += str + '\n';
-            logstr += splitstr + '\n';
-            foreach (var pa in distribution.PAttributions)
-            {
-                var ti = new ThreadInfo(pa.TID);
-                if (ti.IsValid)
-                {
-                    var priority = (int)THREAD_PRIORITY.THREAD_PRIORITY_HIGHEST;
-                    ti.CurrentPriority = priority;
-                    var coreIndex = pa.CPUID - CPUSetInfo.BeginCPUID;
-                    ti.CurrentIdealNumber = coreIndex;
-                    ti.CurrentCpuSets = [pa.CPUID];
-                    
-                    logstr += $"|{pa.TID,-5}";
-                    logstr += $"|{pa.Name,-40}";
-                    logstr += $"|{priority,-8}";
-                    logstr += $"|{coreIndex,-7}";
-                    logstr += "|\n";
-                }
-            }
-            logstr += splitstr + '\n';
-        }
+        if (distribution.PAttributions.Count > 0)
+            logstr += headersplitstr + '\n';
         MyLogger.Info(logstr);
+        return true;
     }
 }

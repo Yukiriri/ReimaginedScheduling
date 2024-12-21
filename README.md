@@ -35,21 +35,24 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
 > 除非尝试运行后确认可以缓解某些瓶颈，不然大概率在低核心CPU上会是负优化  
 
 2. 各exe使用方式  
-  - `ReimaginedScheduling.CLI.Manual.exe`  
-    1. 直接运行并保持，直到不需要使用  
-    2. 开始玩游戏  
-    3. 在游戏中按下提示的快捷键  
-  - `ReimaginedScheduling.CLI.Start.exe`(未完成)  
-    传入参数运行（适合搭配快捷方式）  
-    ```
-    "...\ReimaginedScheduling.CLI.Start.exe" "...\游戏.exe"
-    ```
-  - `ReimaginedScheduling.CLI.Viewer.exe`  
-    给专业人士采集线程数据并向我提交建议用的  
-  - `ReimaginedScheduling.CLI.Modifier.exe`(未完成)  
-    与Viewer组合使用  
+- ~~`ReimaginedScheduling.CLI.Auto.exe`~~(未完成)  
+  1. 直接运行并保持，直到不需要使用  
+  2. 开始玩游戏  
+- `ReimaginedScheduling.CLI.Manual.exe`  
+  1. 直接运行并保持，直到不需要使用  
+  2. 开始玩游戏  
+  3. 在游戏中按下提示的快捷键  
+- ~~`ReimaginedScheduling.CLI.Start.exe`~~(未完成)  
+  传入参数运行（适合搭配快捷方式）  
+  ```
+  "...\ReimaginedScheduling.CLI.Start.exe" "...\游戏.exe"
+  ```
+- `ReimaginedScheduling.CLI.Viewer.exe`  
+  给专业人士采集线程数据并向我提交建议用的  
+- ~~`ReimaginedScheduling.CLI.Modifier.exe`~~(未完成)  
+  与Viewer组合使用  
 > [!NOTE]
-> 游戏线程修改的时效性持续到进程结束，非持久修改  
+> 修改游戏线程的时效性持续到进程结束，非持久修改  
 
 # 计划功能
 - 控制面板用户UI

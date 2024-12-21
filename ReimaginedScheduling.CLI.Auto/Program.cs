@@ -3,7 +3,7 @@ using ReimaginedScheduling.Shared;
 using System.Threading;
 
 ProcessRequire.EnableSeDebug();
-ProcessRequire.SetLastCpu();
+ProcessRequire.SetLastCPU();
 
 for (var gpm = new GameProcessManager(); ; Thread.Sleep(1000))
 {

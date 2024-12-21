@@ -5,7 +5,7 @@ using Windows.System;
 using Windows.Win32;
 
 ProcessRequire.EnableSeDebug();
-ProcessRequire.SetLastCpu();
+ProcessRequire.SetLastCPU();
 
 while (true)
 {
@@ -20,8 +20,8 @@ while (true)
         {
             var wi = new WindowInfo(PInvoke.GetForegroundWindow());
             pid = wi.GetPID();
-            windowName = wi.GetDisplayName(40);
             maintid = wi.GetTID();
+            windowName = wi.GetDisplayName(40);
         }
     }
 

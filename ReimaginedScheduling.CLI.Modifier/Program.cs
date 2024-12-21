@@ -2,4 +2,4 @@
 using System;
 
 ProcessRequire.EnableSeDebug();
-ProcessRequire.SetLastCpu();
+ProcessRequire.SetLastCPU();

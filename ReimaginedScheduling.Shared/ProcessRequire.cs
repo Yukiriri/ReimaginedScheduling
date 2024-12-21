@@ -27,7 +27,7 @@ public class ProcessRequire
         return PInvoke.AdjustTokenPrivileges(hToken, false, &tp, (uint)sizeof(TOKEN_PRIVILEGES), null, null);
     }
 
-    public static unsafe void SetLastCpu()
+    public static unsafe void SetLastCPU()
     {
         uint cpuid = CPUSetInfo.PhysicalPECores.Last();
         PInvoke.SetProcessDefaultCpuSets(PInvoke.GetCurrentProcess(), &cpuid, 1);
