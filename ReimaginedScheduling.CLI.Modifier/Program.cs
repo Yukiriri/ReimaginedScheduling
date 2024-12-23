@@ -1,5 +1,5 @@
 ﻿using ReimaginedScheduling.Shared;
 using System;
 
-ProcessRequire.EnableSeDebug();
-ProcessRequire.SetLastCPU();
+ProcessUtilities.EnableSeDebug();
+ProcessUtilities.SetLastCPU();

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Windows.Win32;
 using Windows.Win32.System.SystemInformation;
@@ -10,10 +9,11 @@ public class CPUSetInfo
 {
     private static readonly SYSTEM_CPU_SET_INFORMATION[] CoreSets = [];
     public static List<uint> PCores { get; private set; } = [];
+    public static List<uint> ECores { get; private set; } = [];
     public static List<uint> PhysicalPCores { get; private set; } = [];
     public static List<uint> HyperThreads { get; private set; } = [];
-    public static List<uint> ECores { get; private set; } = [];
     public static List<uint> PhysicalPECores { get; private set; } = [];
+    public static List<uint[]> UniqueCores { get; private set; } = [];
     public static uint BeginCPUID { get; private set; }
     public static uint PCoreEfficiencyIndex { get; private set; }
     public static bool IsPCoreOnly => PCoreEfficiencyIndex == 0;
@@ -36,8 +36,8 @@ public class CPUSetInfo
             }
         }
 
-        BeginCPUID = CoreSets[0].Anonymous.CpuSet.Id;
-        PCoreEfficiencyIndex = CoreSets.Aggregate(0u, (max, next) => Math.Max(max, next.Anonymous.CpuSet.EfficiencyClass));
+        BeginCPUID = CoreSets.FirstOrDefault().Anonymous.CpuSet.Id;
+        PCoreEfficiencyIndex = CoreSets.Max(cs => cs.Anonymous.CpuSet.EfficiencyClass);
         PCores = CoreSets
             .Where(cs => cs.Anonymous.CpuSet.EfficiencyClass == PCoreEfficiencyIndex)
             .Select(cs => cs.Anonymous.CpuSet.Id)
@@ -55,27 +55,33 @@ public class CPUSetInfo
             .Select(cs => cs.Anonymous.CpuSet.Id)
             .ToList();
         PhysicalPECores = [..PhysicalPCores, ..ECores];
+        UniqueCores = CoreSets
+            .GroupBy(cs => cs.Anonymous.CpuSet.CoreIndex)
+            .Select(cs => cs.Select(x => x.Anonymous.CpuSet.Id).ToArray())
+            .ToList();
     }
 
-    public static uint ToMask(uint[] cpuids)
+    public static uint ToMask(uint[] CPUIDs)
     {
         uint mask = 0;
-        foreach (var id in cpuids)
+        foreach (var id in CPUIDs)
         {
-            mask |= 0b1u << (int)(id - BeginCPUID);
+            mask |= 1u << (int)(id - BeginCPUID);
         }
         return mask;
     }
 
     public static new string ToString()
     {
-        string[] description = ["", "", "", ""];
-        if (PCoreEfficiencyIndex >= 2) description[PCoreEfficiencyIndex - 2] = "LPE";
-        if (PCoreEfficiencyIndex >= 1) description[PCoreEfficiencyIndex - 1] = "E";
-        if (PCoreEfficiencyIndex >= 0) description[PCoreEfficiencyIndex - 0] = "P";
-        var cpustr = "|Group|ID  |PI |LI |Type|Priority|";
-        var splitstr = new string('-', cpustr.Length);
-        cpustr += "\n" + splitstr + "\n";
+        string[] description = ["", "", ""];
+        if (PCoreEfficiencyIndex < 3)
+        {
+            if (PCoreEfficiencyIndex >= 2) description[PCoreEfficiencyIndex - 2] = "LPE";
+            if (PCoreEfficiencyIndex >= 1) description[PCoreEfficiencyIndex - 1] = "E";
+            if (PCoreEfficiencyIndex >= 0) description[PCoreEfficiencyIndex - 0] = "P";
+        }
+
+        var cpustr = "";
         foreach (var cs in CoreSets)
         {
             cpustr += $"|{cs.Anonymous.CpuSet.Group,-5}";
@@ -86,8 +92,16 @@ public class CPUSetInfo
             cpustr += $"|{cs.Anonymous.CpuSet.Anonymous2.SchedulingClass,-8}";
             cpustr += "|\n";
         }
-        cpustr += splitstr + "\n";
-        cpustr += $"{PhysicalPCores.Count}P + {ECores.Count}E";
-        return cpustr;
+
+        var headerstr = "|Group|ID  |PI |LI |Type|Priority|";
+        var headersplitstr = new string('-', headerstr.Length);
+        var str = 
+            headersplitstr + '\n' +
+            headerstr + '\n' +
+            headersplitstr + '\n' +
+            cpustr +
+            headersplitstr + '\n' +
+            $"{PhysicalPCores.Count}P + {ECores.Count}E";
+        return str;
     }
 }

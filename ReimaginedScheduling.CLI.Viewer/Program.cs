@@ -5,8 +5,8 @@ using System.Threading;
 using Windows.System;
 using Windows.Win32;
 
-ProcessRequire.EnableSeDebug();
-ProcessRequire.SetLastCPU();
+ProcessUtilities.EnableSeDebug();
+ProcessUtilities.SetLastCPU();
 Console.SetWindowSize(Console.WindowWidth + 10, Console.WindowHeight);
 
 bool isPaused = false;
@@ -14,20 +14,10 @@ bool isCullingRow = true;
 bool isSortCycleTime = true;
 bool isHideNameless = true;
 
-void OutConsole(string message = "")
-{
-    if (isCullingRow)
-        MyConsole.FillLineIfFree(message);
-    else
-        MyConsole.FillLine(message);
-}
-
 while (true)
 {
-    MyConsole.ScrollToTop();
-    MyConsole.FillConsole();
-    MyConsole.ScrollToTop();
-    Console.Write("Ctrl + Ins");
+    Console.Clear();
+    Console.Write("Ctrl + Ins \r");
 
     var pid = 0u;
     var maintid = 0u;
@@ -43,90 +33,90 @@ while (true)
         }
     }
 
-    for (; pid != 0;)
+    for (int updatetime = 0; pid != 0;)
     {
-        if (!isPaused)
-        {
-            Thread.Sleep(1000);
-            MyConsole.FillConsole();
-            MyConsole.ScrollToTop();
-
-            var pi = new ProcessInfo(pid);
-            if (pi.IsInvalid)
-            {
-                pid = 0;
-                break;
-            }
-
-            var headerstr = $"|ID   |{"Name",-40}|Priority|{"Mask",-16}|CpuSets|CpuSetMasks|{"CycleTime",-21}|Ideal|";
-            var headersplitstr = new string('-', headerstr.Length);
-            var datastr = "";
-            MyConsole.FillLine(headersplitstr);
-            MyConsole.FillLine(headerstr);
-            MyConsole.FillLine(headersplitstr);
-
-            datastr  = $"|{pid,-5}";
-            datastr += $"|{windowName}";
-            datastr += $"|{pi.CurrentPriority,-8}";
-            datastr += $"|{pi.CurrentMask,-16:X}";
-            datastr += $"|{$"({pi.CurrentCpuSetCount})",-7}";
-            datastr += $"|{$"({pi.CurrentCpuSetMaskCount})",-11}";
-            datastr += $"|{pi.CurrentCycleTime,-21}";
-            datastr += $"|{"",-5}";
-            datastr += "|";
-            Console.Write(datastr + new string(' ', Console.WindowWidth - headersplitstr.Length));
-            MyConsole.FillLine(headersplitstr);
-            
-            var thinfos = ProcessInfo.GetTIDs(pid).Select(x => (TID: x, ti: new ThreadInfo(x)));
-            if (isSortCycleTime)
-                thinfos = thinfos.OrderByDescending(x => x.ti.CurrentCycleTime);
-            foreach (var thinfo in thinfos)
-            {
-                if (thinfo.ti.IsValid)
-                {
-                    var tname = thinfo.ti.CurrentName;
-                    if (isHideNameless && thinfo.TID != maintid && tname.Length == 0)
-                        continue;
-                    tname = tname[0..Math.Min(tname.Length, 40)];
-                    
-                    datastr  = $"|{thinfo.TID,-5}";
-                    datastr += $"|{tname,-40}";
-                    datastr += $"|{thinfo.ti.CurrentPriority,-8}";
-                    datastr += $"|{thinfo.ti.CurrentMask,-16:X}";
-                    datastr += $"|{$"{thinfo.ti.CurrentCpuSets.FirstOrDefault()}({thinfo.ti.CurrentCpuSetCount})",-7}";
-                    datastr += $"|{$"({thinfo.ti.CurrentCpuSetMaskCount})",-11}";
-                    datastr += $"|{thinfo.ti.CurrentCycleTime,-21}";
-                    datastr += $"|{thinfo.ti.CurrentIdealNumber,-5}";
-                    datastr += "|";
-                    OutConsole(datastr);
-                }
-            }
-            if (thinfos.Any())
-                OutConsole(headersplitstr);
-            OutConsole();
-            OutConsole("'q': Quit");
-            OutConsole("'p': Pause");
-            OutConsole("'c': Culling Row");
-            OutConsole("'s': Sort CycleTime");
-            OutConsole("'n': Toggle Nameless");
-            OutConsole();
-        }
-
+        Thread.Sleep(100);
         while (Console.KeyAvailable)
         {
             switch (Console.ReadKey().KeyChar)
             {
-                case 'q': pid = 0;
-                    break;
-                case 'p': isPaused = !isPaused;
-                    break;
-                case 'c': isCullingRow = !isCullingRow;
-                    break;
-                case 's': isSortCycleTime = !isSortCycleTime;
-                    break;
-                case 'n': isHideNameless = !isHideNameless;
-                    break;
+                case 'q': pid = 0; break;
+                case 'p': isPaused = !isPaused; break;
+                case 'c': isCullingRow = !isCullingRow; break;
+                case 's': isSortCycleTime = !isSortCycleTime; break;
+                case 'n': isHideNameless = !isHideNameless; break;
             }
         }
+        if (++updatetime < 10)
+            continue;
+        if (isPaused)
+            continue;
+        updatetime = 0;
+
+        Console.WriteLine("\r'q': Quit");
+        Console.WriteLine("\r'p': Pause");
+        Console.WriteLine("\r'c': Culling row");
+        Console.WriteLine("\r's': Sort CycleTime");
+        Console.WriteLine("\r'h': Hide Nameless");
+        
+        var pi = new ProcessInfo(pid);
+        if (pi.IsInvalid)
+        {
+            pid = 0;
+            break;
+        }
+
+        var procstr = "";
+        procstr += $"|{pid,-5}";
+        procstr += $"|{windowName}";
+        procstr += $"|{pi.CurrentPriority,-8}";
+        procstr += $"|{pi.CurrentMask,-16:X}";
+        procstr += $"|{$"({pi.CurrentCpuSetCount})",-7}";
+        procstr += $"|{$"({pi.CurrentCpuSetMaskCount})",-11}";
+        procstr += $"|{pi.CurrentCycleTime,-21}";
+        procstr += $"|{"",-5}";
+        procstr += "|\n";
+        
+        var thstr = "";
+        {
+            var thinfos = ProcessUtilities.GetTIDs(pid)
+                .Select(x => (TID: x, ti: new ThreadInfo(x)))
+                .Where(x => x.ti.IsValid);
+            if (isHideNameless)
+                thinfos = thinfos.Where(x => x.TID == maintid || x.ti.CurrentName.Length > 0);
+            if (isSortCycleTime)
+                thinfos = thinfos.OrderByDescending(x => x.ti.CurrentCycleTime);
+            foreach (var thinfo in thinfos)
+            {
+                thstr += $"|{thinfo.TID,-5}";
+                thstr += $"|{new string([..thinfo.ti.CurrentName.Take(40)]),-40}";
+                thstr += $"|{thinfo.ti.CurrentPriority,-8}";
+                thstr += $"|{thinfo.ti.CurrentMask,-16:X}";
+                thstr += $"|{$"{thinfo.ti.CurrentCpuSets.FirstOrDefault()}({thinfo.ti.CurrentCpuSetCount})",-7}";
+                thstr += $"|{$"({thinfo.ti.CurrentCpuSetMaskCount})",-11}";
+                thstr += $"|{thinfo.ti.CurrentCycleTime,-21}";
+                thstr += $"|{thinfo.ti.CurrentIdealNumber,-5}";
+                thstr += "|\n";
+            }
+        }
+
+        var headerstr = $"|ID   |{"Name",-40}|Priority|{"Mask",-16}|CpuSets|CpuSetMasks|{"CycleTime",-21}|Ideal|";
+        var headersplitstr = new string('-', headerstr.Length);
+        var str = 
+            headersplitstr + '\n' +
+            headerstr + '\n' +
+            headersplitstr + '\n' +
+            procstr +
+            headersplitstr + '\n' +
+            thstr +
+            headersplitstr;
+        foreach (var s in str.Split('\n'))
+        {
+            if (isCullingRow && Console.CursorTop >= Console.WindowHeight)
+                continue;
+            Console.WriteLine(s);
+        }
+        MyConsole.FillConsole();
+        MyConsole.ScrollToTop();
     }
 }

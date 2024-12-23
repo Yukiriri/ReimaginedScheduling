@@ -2,12 +2,14 @@
 
 [![Logo](./md/logo-118589293_p02.png)]()
 
+### ReimaginedScheduling
+
+[Release]: https://github.com/Yukiriri/ReimaginedScheduling/releases
+
 [![Build](https://img.shields.io/github/actions/workflow/status/Yukiriri/ReimaginedScheduling/build.yml?style=for-the-badge)](
   https://github.com/Yukiriri/ReimaginedScheduling/actions/workflows/build.yml
 )
 [![Downloads](https://img.shields.io/github/downloads/Yukiriri/ReimaginedScheduling/total?style=for-the-badge)][Release]
-
-[Release]: https://github.com/Yukiriri/ReimaginedScheduling/releases
 
 通过读取前台游戏的线程信息，重新规划线程分配，让重要线程适当独占核心，提高CPU理论渲染性能的天花板，并减少一些波动，帮助高端CPU更上一层楼。  
 Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心玩游戏。  

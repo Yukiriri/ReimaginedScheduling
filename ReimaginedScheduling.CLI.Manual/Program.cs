@@ -4,8 +4,8 @@ using System.Threading;
 using Windows.System;
 using Windows.Win32;
 
-ProcessRequire.EnableSeDebug();
-ProcessRequire.SetLastCPU();
+ProcessUtilities.EnableSeDebug();
+ProcessUtilities.SetLastCPU();
 
 while (true)
 {
