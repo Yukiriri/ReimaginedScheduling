@@ -1,7 +1,6 @@
 GetForegroundWindow
 GetDesktopWindow
 GetCursorInfo
-IsWindow
 
 PdhOpenQuery
 PdhCloseQuery

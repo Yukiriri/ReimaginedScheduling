@@ -36,5 +36,6 @@ GetWindowThreadProcessId
 GetWindowTextLength
 GetWindowText
 GetClientRect
+IsWindow
 
 GetAsyncKeyState

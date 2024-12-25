@@ -30,7 +30,7 @@ public class GameProcessManager
             if (PInvoke.GetCursorInfo(ref ci) && ci.flags != 0)
                 return false;
         }
-        var pid = wi.GetPID();
+        var pid = wi.CurrentPID;
         if (pid != 0)
         {
             var gpuUsage = _performanceMonitor.GetGPUUsage(pid);

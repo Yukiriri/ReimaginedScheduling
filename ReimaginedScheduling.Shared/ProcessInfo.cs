@@ -16,7 +16,7 @@ public class ProcessInfo
             PROCESS_ACCESS_RIGHTS.PROCESS_SET_LIMITED_INFORMATION, false, PID);
     }
 
-    public bool IsValid => !_hProcess.IsInvalid;
+    public bool IsValid => !IsInvalid;
     public bool IsInvalid => _hProcess.IsInvalid;
 
     public uint CurrentPriority

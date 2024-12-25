@@ -11,24 +11,30 @@ public class WindowInfo
         _hWND = (HWND)hWND;
     }
 
-    public unsafe string GetName()
+    public bool IsValid => !IsInvalid;
+    public bool IsInvalid => _hWND.IsNull || !PInvoke.IsWindow(_hWND);
+
+    public unsafe string CurrentName
     {
-        string windowName = "";
-        var textLength = PInvoke.GetWindowTextLength(_hWND) + 1;
-        var text = new char[textLength];
-        fixed (char* textPtr = text)
+        get
         {
-            if (PInvoke.GetWindowText(_hWND, textPtr, textLength) > 0)
+            string windowName = "";
+            var textLength = PInvoke.GetWindowTextLength(_hWND) + 1;
+            var text = new char[textLength];
+            fixed (char* textPtr = text)
             {
-                windowName = new string(textPtr);
+                if (PInvoke.GetWindowText(_hWND, textPtr, textLength) > 0)
+                {
+                    windowName = new string(textPtr);
+                }
             }
+            return windowName;
         }
-        return windowName;
     }
 
     public string GetDisplayName(int maxShowLength)
     {
-        var windowName = GetName();
+        var windowName = CurrentName;
         var showLength = 0;
         while ((showLength = windowName.Aggregate(0, (length, next) => length + (next > 127 ? 2 : 1))) > maxShowLength)
         {
@@ -38,24 +44,25 @@ public class WindowInfo
         return windowName;
     }
 
-    public unsafe uint GetPID()
+    public (int Width, int Height) GetSize()
     {
-        uint pid = 0;
-        _ = PInvoke.GetWindowThreadProcessId(_hWND, &pid);
-        return pid;
+        PInvoke.GetClientRect(_hWND, out var lpRect);
+        return (lpRect.Width, lpRect.Height);
     }
 
-    public unsafe uint GetTID()
+    public unsafe uint CurrentPID
     {
-        var tid = PInvoke.GetWindowThreadProcessId(_hWND, null);
-        return tid;
+        get
+        {
+            uint pid = 0;
+            _ = PInvoke.GetWindowThreadProcessId(_hWND, &pid);
+            return pid;
+        }
     }
 
-    public unsafe (int Width, int Height) GetSize()
+    public unsafe uint CurrentTID
     {
-        RECT rect = new();
-        PInvoke.GetClientRect(_hWND, &rect);
-        return (rect.Width, rect.Height);
+        get => PInvoke.GetWindowThreadProcessId(_hWND, null);
     }
 
     private readonly HWND _hWND = HWND.Null;

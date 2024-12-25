@@ -19,8 +19,8 @@ while (true)
         if (HotKey.IsCtrl && (HotKey.IsKeyDown(VirtualKey.PageUp) || HotKey.IsKeyDown(VirtualKey.PageDown)))
         {
             var wi = new WindowInfo(PInvoke.GetForegroundWindow());
-            pid = wi.GetPID();
-            maintid = wi.GetTID();
+            pid = wi.CurrentPID;
+            maintid = wi.CurrentTID;
             windowName = wi.GetDisplayName(40);
         }
     }

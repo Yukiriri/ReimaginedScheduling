@@ -16,17 +16,8 @@ public class ThreadInfo
             THREAD_ACCESS_RIGHTS.THREAD_SET_LIMITED_INFORMATION, false, TID);
     }
 
-    public bool IsValid => !_hThread.IsInvalid;
+    public bool IsValid => !IsInvalid;
     public bool IsInvalid => _hThread.IsInvalid;
-
-    public string CurrentName
-    {
-        get
-        {
-            PInvoke.GetThreadDescription(_hThread, out var ppszThreadDescription);
-            return ppszThreadDescription.ToString() ?? "";
-        }
-    }
 
     public int CurrentPriority
     {
@@ -69,6 +60,15 @@ public class ThreadInfo
         {
             PInvoke.GetThreadSelectedCpuSetMasks(_hThread, new(), out var requiredMaskCount);
             return requiredMaskCount;
+        }
+    }
+
+    public string CurrentName
+    {
+        get
+        {
+            PInvoke.GetThreadDescription(_hThread, out var ppszThreadDescription);
+            return ppszThreadDescription.ToString() ?? "";
         }
     }
 

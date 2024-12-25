@@ -23,11 +23,11 @@ public class DistributionGenerator
     [
         new Regex(@"(RenderThread \d)|(RHISubmissionThread)"),
         new Regex(@"RHIThread"),
-        new Regex(@"Foreground Worker #0(?!.+)"),
-        new Regex(@"Foreground Worker #1(?!.+)"),
-        new Regex(@"Foreground Worker #2(?!.+)"),
-        new Regex(@"Foreground Worker #3(?!.+)"),
-        new Regex(@"Foreground Worker #4(?!.+)"),
+        // new Regex(@"Foreground Worker #0(?!.+)"),
+        // new Regex(@"Foreground Worker #1(?!.+)"),
+        // new Regex(@"Foreground Worker #2(?!.+)"),
+        // new Regex(@"Foreground Worker #3(?!.+)"),
+        // new Regex(@"Foreground Worker #4(?!.+)"),
     ];
     private static readonly Regex[] _UnityThreadNames = 
     [
@@ -75,12 +75,12 @@ public class DistributionGenerator
             if (isMatched)
                 break;
         }
-        var sharedIndex = PIndex;
         if (CPUSetInfo.ECores.Count == 0)
         {
-            sharedIndex = Math.Min(sharedIndex, CPUSetInfo.PhysicalPCores.Count / 2);
+            PIndex = Math.Min(PIndex, CPUSetInfo.PhysicalPCores.Count / 2);
         }
-        distribution.SharedCPUIDs = CPUSetInfo.UniqueCores[sharedIndex..].SelectMany(x => x).ToList();
+        distribution.SharedCPUIDs = CPUSetInfo.UniqueCores[PIndex..].SelectMany(x => x).ToList();
+        // distribution.SharedCPUIDs = CPUSetInfo.PhysicalPECores[PIndex..];
 
         return distribution;
     }
@@ -97,37 +97,47 @@ public class DistributionGenerator
             var ti = new ThreadInfo(pa.TID);
             if (ti.IsValid)
             {
-                var priority = (int)THREAD_PRIORITY.THREAD_PRIORITY_HIGHEST;
-                ti.CurrentPriority = priority;
-                var idealIndex = pa.CPUIDs[0] - CPUSetInfo.BeginCPUID;
-                ti.CurrentIdealNumber = idealIndex;
-                var cpuidstr = string.Join(',', pa.CPUIDs.Select(x => x - CPUSetInfo.BeginCPUID));
-                ti.CurrentCpuSets = [..pa.CPUIDs];
+                var cpuidstr = "default";
+                if (isRedistribution)
+                {
+                    ti.CurrentIdealNumber = pa.CPUIDs[0] - CPUSetInfo.BeginCPUID;
+                    ti.CurrentCpuSets = [..pa.CPUIDs];
+                    cpuidstr = string.Join(',', pa.CPUIDs.Select(x => x - CPUSetInfo.BeginCPUID));
+                }
+                else
+                {
+                    ti.CurrentCpuSets = [];
+                }
                 
                 thstr += $"|{pa.TID,-5}";
-                thstr += $"|{pa.Name,-40}";
-                thstr += $"|{priority,-8}";
-                thstr += $"|{cpuidstr,-7}";
+                thstr += $"|{new string([..pa.Name.Take(40)]),-40}";
+                thstr += $"|{cpuidstr,-25}";
                 thstr += "|\n";
             }
         }
         var procstr = "";
         {
-            var priority = (uint)PROCESS_CREATION_FLAGS.HIGH_PRIORITY_CLASS;
-            pi.CurrentPriority = priority;
-            var beginindex = distribution.SharedCPUIDs.First() - CPUSetInfo.BeginCPUID;
-            var endindex = distribution.SharedCPUIDs.Last() - CPUSetInfo.BeginCPUID;
-            var cpuidstr = $"{beginindex}-{endindex}";
-            pi.CurrentCpuSets = distribution.SharedCPUIDs;
+            var cpuidstr = "default";
+            if (isRedistribution)
+            {
+                pi.CurrentPriority = (uint)PROCESS_CREATION_FLAGS.HIGH_PRIORITY_CLASS;
+                pi.CurrentCpuSets = distribution.SharedCPUIDs;
+                cpuidstr = string.Join(',', distribution.SharedCPUIDs.Select(x => x - CPUSetInfo.BeginCPUID));
+
+            }
+            else
+            {
+                pi.CurrentPriority = (uint)PROCESS_CREATION_FLAGS.NORMAL_PRIORITY_CLASS;
+                pi.CurrentCpuSets = [];
+            }
             
             procstr += $"|{pid,-5}";
             procstr += $"|{windowName}";
-            procstr += $"|{priority,-8}";
-            procstr += $"|{cpuidstr,-7}";
+            procstr += $"|{cpuidstr,-25}";
             procstr += "|\n";
         }
 
-        var headerstr = $"|ID   |{"Name",-40}|Priority|CPU    |";
+        var headerstr = $"|ID   |{"Name",-40}|{"CPU",-25}|";
         var headersplitstr = new string('-', headerstr.Length);
         var str = "\n" +
             headersplitstr + '\n' +

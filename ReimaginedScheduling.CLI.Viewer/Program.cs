@@ -27,13 +27,13 @@ while (true)
         if (HotKey.IsCtrl && HotKey.IsKeyDown(VirtualKey.Insert))
         {
             var wi = new WindowInfo(PInvoke.GetForegroundWindow());
-            pid = wi.GetPID();
-            maintid = wi.GetTID();
+            pid = wi.CurrentPID;
+            maintid = wi.CurrentTID;
             windowName = wi.GetDisplayName(40);
         }
     }
 
-    for (int updatetime = 0; pid != 0;)
+    for (var updatetime = 0; pid != 0;)
     {
         Thread.Sleep(100);
         while (Console.KeyAvailable)
@@ -78,26 +78,24 @@ while (true)
         procstr += "|\n";
         
         var thstr = "";
+        var thinfos = ProcessUtilities.GetTIDs(pid)
+            .Select(x => (TID: x, ti: new ThreadInfo(x)))
+            .Where(x => x.ti.IsValid);
+        if (isHideNameless)
+            thinfos = thinfos.Where(x => x.TID == maintid || x.ti.CurrentName.Length > 0);
+        if (isSortCycleTime)
+            thinfos = thinfos.OrderByDescending(x => x.ti.CurrentCycleTime);
+        foreach (var thinfo in thinfos)
         {
-            var thinfos = ProcessUtilities.GetTIDs(pid)
-                .Select(x => (TID: x, ti: new ThreadInfo(x)))
-                .Where(x => x.ti.IsValid);
-            if (isHideNameless)
-                thinfos = thinfos.Where(x => x.TID == maintid || x.ti.CurrentName.Length > 0);
-            if (isSortCycleTime)
-                thinfos = thinfos.OrderByDescending(x => x.ti.CurrentCycleTime);
-            foreach (var thinfo in thinfos)
-            {
-                thstr += $"|{thinfo.TID,-5}";
-                thstr += $"|{new string([..thinfo.ti.CurrentName.Take(40)]),-40}";
-                thstr += $"|{thinfo.ti.CurrentPriority,-8}";
-                thstr += $"|{thinfo.ti.CurrentMask,-16:X}";
-                thstr += $"|{$"{thinfo.ti.CurrentCpuSets.FirstOrDefault()}({thinfo.ti.CurrentCpuSetCount})",-7}";
-                thstr += $"|{$"({thinfo.ti.CurrentCpuSetMaskCount})",-11}";
-                thstr += $"|{thinfo.ti.CurrentCycleTime,-21}";
-                thstr += $"|{thinfo.ti.CurrentIdealNumber,-5}";
-                thstr += "|\n";
-            }
+            thstr += $"|{thinfo.TID,-5}";
+            thstr += $"|{new string([..thinfo.ti.CurrentName.Take(40)]),-40}";
+            thstr += $"|{thinfo.ti.CurrentPriority,-8}";
+            thstr += $"|{thinfo.ti.CurrentMask,-16:X}";
+            thstr += $"|{$"{thinfo.ti.CurrentCpuSets.FirstOrDefault()}({thinfo.ti.CurrentCpuSetCount})",-7}";
+            thstr += $"|{$"({thinfo.ti.CurrentCpuSetMaskCount})",-11}";
+            thstr += $"|{thinfo.ti.CurrentCycleTime,-21}";
+            thstr += $"|{thinfo.ti.CurrentIdealNumber,-5}";
+            thstr += "|\n";
         }
 
         var headerstr = $"|ID   |{"Name",-40}|Priority|{"Mask",-16}|CpuSets|CpuSetMasks|{"CycleTime",-21}|Ideal|";
