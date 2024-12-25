@@ -81,9 +81,6 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
     - ### Global C State
       ### 建议保持Auto
       如果启用这个选项会影响软件计算CPU的正确占用率，那就关闭  
-  - ## 电源计划
-    不要再尝试 `最小放置核心50%` + `SMT循环` 的组合  
-    这个组合搭配我的程序会让Windows水土不服  
 
 ## Stargazers
 [![Stargazers](https://starchart.cc/Yukiriri/ReimaginedScheduling.svg?variant=adaptive)](https://starchart.cc/Yukiriri/ReimaginedScheduling)
