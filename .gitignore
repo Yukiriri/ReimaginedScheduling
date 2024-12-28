@@ -1,6 +1,8 @@
 .vs/**
 .vscode/**
 dev/**
+
 bin/**
-ReimaginedScheduling*/bin/**
-ReimaginedScheduling*/obj/**
+src/ReimaginedScheduling*/bin/**
+src/ReimaginedScheduling*/obj/**
+*.bat

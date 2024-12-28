@@ -20,15 +20,21 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
 # 实现原理
 - [核心与线程规划](./md/thread.md)
 
+# 食用前提
+|          |                        |
+| :------- | :--------------------- |
+| 系统版本 | >=24H2（推荐）         |
+| 电源计划 | 系统默认的平衡（推荐） |
+
 # 食用效果
-  <details><summary>食用前</summary>
+<details><summary>食用前</summary>
 
-  ![](./md/img/before.png)
-  </details>
-  <details><summary>食用后</summary>
+![](./md/img/before.png)
+</details>
+<details><summary>食用后</summary>
 
-  ![](./md/img/after.png)
-  </details>
+![](./md/img/after.png)
+</details>
 
 # 食用方式
 1. 前往 [Release] 选择下载自动构建的exe  
@@ -54,7 +60,7 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
 - ~~`ReimaginedScheduling.CLI.Modifier.exe`~~(未完成)  
   与Viewer组合使用  
 > [!NOTE]
-> 修改游戏线程的时效性持续到进程结束，非持久修改  
+> 修改游戏线程的时效性持续到游戏进程结束，非持久修改  
 
 # 计划功能
 - 控制面板用户UI
@@ -71,16 +77,18 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
   - ## BIOS
     - ### PSS Support(Cool n Quite)
       ### 强烈建议别关
-      关掉后将连带关闭CPPC等诸多自动性能调节  
-      带来的严重影响：就算帧率再高，Frametime再直线，游戏渲染出来也是一顿一顿  
-      打开`Windows事件查看器`，筛选`Kernel-Processor-Power`事件，会看见`ACPI None`，而正常情况是`ACPI CPPC`  
+      关掉后将连带关闭`CPPC v2`等诸多硬件自主性能调节，没有了`CPPC v2`，就要让Windows承担这个操作，而Windows的性能调节极其迟钝  
+      打开`Windows事件查看器`，筛选`Kernel-Processor-Power`事件，会看见`ACPI None`，有CPPC的情况是`ACPI CPPC`  
+      关掉的影响：就算帧率高，就算Frametime为直线，游戏渲染出来也是一顿一顿  
     - ### CPPC PC
       ### 建议保持Auto
       关掉后会将所有核心的性能计数器分辨率上限同步为最雷的核心的上限  
       打开`Windows事件查看器`，筛选`Kernel-Processor-Power`事件，也可以看见变化  
+      关掉的影响：有的游戏观感会出现微妙的变化  
     - ### Global C State
       ### 建议保持Auto
       如果启用这个选项会影响软件计算CPU的正确占用率，那就关闭  
+      关掉的影响：空载温度高  
 
 ## Stargazers
 [![Stargazers](https://starchart.cc/Yukiriri/ReimaginedScheduling.svg?variant=adaptive)](https://starchart.cc/Yukiriri/ReimaginedScheduling)
