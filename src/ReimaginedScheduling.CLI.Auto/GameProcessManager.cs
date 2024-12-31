@@ -1,9 +1,8 @@
-﻿using ReimaginedScheduling.Common.Windows.Device;
-using ReimaginedScheduling.Common.Windows.Info;
+﻿using ReimaginedScheduling.Common.Windows.Info.Window;
 using Windows.Win32;
 using Windows.Win32.UI.WindowsAndMessaging;
 
-namespace ReimaginedScheduling.CLI.Auto;
+namespace ReimaginedScheduling.Auto;
 
 public class GameProcessManager
 {
@@ -12,17 +11,15 @@ public class GameProcessManager
 
     public GameProcessManager()
     {
-        var wi = new WindowInfo(PInvoke.GetDesktopWindow());
-        _desktopSize = wi.CurrentSize;
+        _desktopSize = new DesktopWindowInfo().CurrentSize;
     }
 
     public bool IsGameProcess()
     {
-        var hwnd = PInvoke.GetForegroundWindow();
-        if (!hwnd.IsNull)
+        var wi = new ForegroundWindowInfo();
+        if (wi.IsInvalid)
             return false;
 
-        var wi = new WindowInfo(hwnd);
         var wndSize = wi.CurrentSize;
         if (wndSize != _desktopSize)
         {

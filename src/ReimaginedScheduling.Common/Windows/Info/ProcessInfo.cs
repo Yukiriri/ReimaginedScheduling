@@ -24,13 +24,9 @@ public class ProcessInfo
             PROCESS_ACCESS_RIGHTS.PROCESS_SET_INFORMATION |
             PROCESS_ACCESS_RIGHTS.PROCESS_SET_LIMITED_INFORMATION, false, PID);
     }
-    ~ProcessInfo()
-    {
-        _hProcess.Close();
-    }
 
     public bool IsValid => !IsInvalid;
-    public bool IsInvalid => _hProcess.IsInvalid;
+    public bool IsInvalid => _hProcess?.IsInvalid ?? true;
 
     public uint CurrentPriority
     {
@@ -119,6 +115,6 @@ public class ProcessInfo
         } while (PInvoke.Thread32Next(hsnap, ref te32));
         return list;
     }
-    
-    private readonly SafeFileHandle _hProcess;
+
+    private readonly SafeFileHandle? _hProcess;
 }

@@ -1,5 +1,5 @@
-﻿using ReimaginedScheduling.CLI.Auto;
-using ReimaginedScheduling.Common.Process.Tool;
+﻿using ReimaginedScheduling.Auto;
+using ReimaginedScheduling.Common.Tool;
 using System.Threading;
 
 ProcessRequire.EnableSeDebug();

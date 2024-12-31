@@ -36,16 +36,14 @@ Process32Next
 Thread32First
 Thread32Next
 
+GetForegroundWindow
+GetDesktopWindow
+WindowFromPoint
+GetCursorPos
+IsWindow
 GetWindowThreadProcessId
 GetWindowTextLength
 GetWindowText
 GetClientRect
-IsWindow
 
 GetAsyncKeyState
-
-PdhOpenQuery
-PdhCloseQuery
-PdhAddCounter
-PdhCollectQueryData
-PdhGetFormattedCounterArray

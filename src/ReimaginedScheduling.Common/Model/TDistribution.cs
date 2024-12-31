@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Windows.Win32.System.Threading;
 
-namespace ReimaginedScheduling.Common.Process;
+namespace ReimaginedScheduling.Common.Model;
 
 public class TDistribution
 {
@@ -29,7 +29,7 @@ public class TDistribution
             thstr += $"|{string.Join(',', attribution.CPUIDs.Select(x => x - CPUSetInfo.BeginCPUID)),-40}";
             thstr += "|\n";
         }
-        thstr += $"|{"",5}";
+        thstr += $"|{"...",5}";
         thstr += $"|{"...",-40}";
         thstr += $"|{string.Join(',', SharedCPUIDs.Select(x => x - CPUSetInfo.BeginCPUID)),-40}";
         thstr += "|\n";
@@ -43,7 +43,7 @@ public class TDistribution
         return str;
     }
 
-    public bool ApplyToProcess(uint PID, bool isRenew)
+    public bool ApplyToProcess(uint PID, bool isOn)
     {
         var pi = new ProcessInfo(PID);
         if (pi.IsInvalid)
@@ -54,7 +54,7 @@ public class TDistribution
             var ti = new ThreadInfo(attribution.TID);
             if (ti.IsValid)
             {
-                if (isRenew)
+                if (isOn)
                 {
                     ti.CurrentIdealNumber = attribution.CPUIDs[0] - CPUSetInfo.BeginCPUID;
                     ti.CurrentCpuSets = [..attribution.CPUIDs];
@@ -65,7 +65,7 @@ public class TDistribution
                 }
             }
         }
-        if (isRenew)
+        if (isOn)
         {
             pi.CurrentPriority = (uint)PROCESS_CREATION_FLAGS.HIGH_PRIORITY_CLASS;
             pi.CurrentCpuSets = [..SharedCPUIDs];

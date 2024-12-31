@@ -23,13 +23,9 @@ public class ThreadInfo
             THREAD_ACCESS_RIGHTS.THREAD_SET_INFORMATION |
             THREAD_ACCESS_RIGHTS.THREAD_SET_LIMITED_INFORMATION, false, TID);
     }
-    ~ThreadInfo()
-    {
-        _hThread.Close();
-    }
 
     public bool IsValid => !IsInvalid;
-    public bool IsInvalid => _hThread.IsInvalid;
+    public bool IsInvalid => _hThread?.IsInvalid ?? true;
 
     public int CurrentPriority
     {
@@ -105,5 +101,5 @@ public class ThreadInfo
         set => PInvoke.SetThreadIdealProcessor(_hThread, value);
     }
 
-    private readonly SafeFileHandle _hThread;
+    private readonly SafeFileHandle? _hThread;
 }

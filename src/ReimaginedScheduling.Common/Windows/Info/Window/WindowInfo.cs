@@ -2,28 +2,28 @@ using System.Linq;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 
-namespace ReimaginedScheduling.Common.Windows.Info;
+namespace ReimaginedScheduling.Common.Windows.Info.Window;
 
 public class WindowInfo
 {
     public WindowInfo(nint hWND)
     {
-        _hWND = (HWND)hWND;
+        _hWnd = (HWND)hWND;
     }
 
     public bool IsValid => !IsInvalid;
-    public bool IsInvalid => _hWND.IsNull || !PInvoke.IsWindow(_hWND);
+    public bool IsInvalid => _hWnd.IsNull || !PInvoke.IsWindow(_hWnd);
 
     public unsafe string CurrentName
     {
         get
         {
             string windowName = "";
-            var textLength = PInvoke.GetWindowTextLength(_hWND) + 1;
+            var textLength = PInvoke.GetWindowTextLength(_hWnd) + 1;
             var text = new char[textLength];
             fixed (char* textPtr = text)
             {
-                if (PInvoke.GetWindowText(_hWND, textPtr, textLength) > 0)
+                if (PInvoke.GetWindowText(_hWnd, textPtr, textLength) > 0)
                 {
                     windowName = new string(textPtr);
                 }
@@ -48,7 +48,7 @@ public class WindowInfo
     {
         get
         {
-            PInvoke.GetClientRect(_hWND, out var lpRect);
+            PInvoke.GetClientRect(_hWnd, out var lpRect);
             return (lpRect.Width, lpRect.Height);
         }
     }
@@ -58,15 +58,15 @@ public class WindowInfo
         get
         {
             uint pid = 0;
-            _ = PInvoke.GetWindowThreadProcessId(_hWND, &pid);
+            _ = PInvoke.GetWindowThreadProcessId(_hWnd, &pid);
             return pid;
         }
     }
 
     public unsafe uint CurrentTID
     {
-        get => PInvoke.GetWindowThreadProcessId(_hWND, null);
+        get => PInvoke.GetWindowThreadProcessId(_hWnd, null);
     }
 
-    private readonly HWND _hWND = HWND.Null;
+    private readonly HWND _hWnd = HWND.Null;
 }

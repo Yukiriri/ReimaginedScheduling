@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace ReimaginedScheduling.Common.Process;
+namespace ReimaginedScheduling.Common.Model;
 
 public class TDistributionBuilder
 {
@@ -23,18 +23,17 @@ public class TDistributionBuilder
     [
         new DistributionModel()
         {
-            EnginePattern = new(@"TaskGraphThread"), //UE4
+            EnginePattern = new(@"TaskGraphThread.P"), //UE4
             Fixeds =
             [
-                new(0, new(@"(FMediaTicker)|(RTHeartBeat \d)")),
-                new(1, new(@"(RenderThread \d)|(Audio.*Thread)")),
-                new(2, new(@"RHIThread")),
+                // new(0, new(@"")),
+                new(1, new(@"(RenderThread \d)|(RTHeartBeat \d)")),
+                new(2, new(@"(RHIThread)|(Audio.*Thread)")),
             ],
             Rotations =
             [
-                // new(@"TaskGraphThreadHP"),
-                // new(@"TaskGraphThreadNP"),
-                // new(@"TaskGraphThreadBP"),
+                new(@"TaskGraphThread.P \d"),
+                new(@"ThreadPool Thread-\d"),
             ]
         },
         new DistributionModel()
@@ -42,16 +41,12 @@ public class TDistributionBuilder
             EnginePattern = new(@"ground Worker #"), //UE5
             Fixeds =
             [
-                new(1, new(@"RenderThread \d")),
+                new(1, new(@"(RenderThread \d)|(RHISubmissionThread)")),
                 new(2, new(@"RHIThread")),
-                new(3, new(@"RHISubmissionThread")),
             ],
             Rotations =
             [
-                // new(@"ground Worker #0(?!.+)"),
-                // new(@"ground Worker #1(?!.+)"),
-                // new(@"ground Worker #2(?!.+)"),
-                // new(@"ground Worker #3(?!.+)"),
+                // new(@"ground Worker #\d(?!.+)"),
             ]
         },
         new DistributionModel()
@@ -113,4 +108,5 @@ public class TDistributionBuilder
 
         return distribution;
     }
+    
 }

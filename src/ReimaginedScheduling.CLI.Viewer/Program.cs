@@ -1,12 +1,12 @@
 ﻿using ReimaginedScheduling.Common;
-using ReimaginedScheduling.Common.Process.Tool;
+using ReimaginedScheduling.Common.Tool;
 using ReimaginedScheduling.Common.Windows.Device;
 using ReimaginedScheduling.Common.Windows.Info;
+using ReimaginedScheduling.Common.Windows.Info.Window;
 using System;
 using System.Linq;
 using System.Threading;
 using Windows.System;
-using Windows.Win32;
 
 ProcessRequire.EnableSeDebug();
 ProcessRequire.SetLastCPU();
@@ -20,21 +20,13 @@ bool isHideNameless = true;
 while (true)
 {
     Console.Clear();
-    Console.Write("Ctrl + Ins \r");
+    Console.Write(" Ctrl + Ins\r");
 
-    var pid = 0u;
-    var maintid = 0u;
-    var windowName = "";
-    for (; pid == 0; Thread.Sleep(1))
-    {
-        if (HotKey.IsKeyDown([VirtualKey.Control, VirtualKey.Insert]))
-        {
-            var wi = new WindowInfo(PInvoke.GetForegroundWindow());
-            pid = wi.CurrentPID;
-            maintid = wi.CurrentTID;
-            windowName = wi.GetDisplayName(40);
-        }
-    }
+    for (; !HotKey.IsKeyDown([VirtualKey.Control, VirtualKey.Insert]); Thread.Sleep(1));
+    var wi = new MousePointWindowInfo();
+    var pid = wi.CurrentPID;
+    var maintid = wi.CurrentTID;
+    var windowName = wi.GetDisplayName(40);
 
     for (var updatetime = 0; pid != 0;)
     {
@@ -55,6 +47,7 @@ while (true)
         if (isPaused)
             continue;
         updatetime = 0;
+        GC.Collect();
 
         Console.WriteLine("\r'q': Quit");
         Console.WriteLine("\r'p': Pause");

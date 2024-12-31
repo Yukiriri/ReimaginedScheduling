@@ -3,7 +3,7 @@ using System.Linq;
 using Windows.Win32;
 using Windows.Win32.Security;
 
-namespace ReimaginedScheduling.Common.Process.Tool;
+namespace ReimaginedScheduling.Common.Tool;
 
 public class ProcessRequire
 {
@@ -28,8 +28,8 @@ public class ProcessRequire
         return PInvoke.AdjustTokenPrivileges(hToken, false, &tp, (uint)sizeof(TOKEN_PRIVILEGES), null, null);
     }
 
-    public static bool SetLastCPU()
+    public static void SetLastCPU()
     {
-        return PInvoke.SetProcessDefaultCpuSets(PInvoke.GetCurrentProcess_SafeHandle(), [CPUSetInfo.PhysicalPECores.Last()]);
+        new ProcessInfo().CurrentCpuSets = [CPUSetInfo.PhysicalPECores.Last()];
     }
 }
