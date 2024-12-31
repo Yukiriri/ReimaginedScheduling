@@ -1,0 +1,7 @@
+PdhOpenQuery
+PdhCloseQuery
+PdhAddCounter
+PdhCollectQueryData
+PdhGetFormattedCounterArray
+
+GetCursorInfo
