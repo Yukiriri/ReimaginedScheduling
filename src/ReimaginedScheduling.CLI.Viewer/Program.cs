@@ -47,7 +47,9 @@ while (true)
         if (isPaused)
             continue;
         updatetime = 0;
+        #if !DEBUG
         GC.Collect();
+        #endif
 
         Console.WriteLine("\r'q': Quit");
         Console.WriteLine("\r'p': Pause");
