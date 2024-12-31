@@ -7,21 +7,20 @@
 
 # 线程排布
   - ## UE4游戏
-    | 核心       | 线程                                      |
-    | :--------- | :---------------------------------------- |
-    | 1 & 超线程 | GameThread   & FMediaTicker & RTHeartBeat |
-    | 2 & 超线程 | RenderThread & AudioThread                |
-    | 3 & 超线程 | RHIThread                                 |
-    | 4--N       | 其他                                      |
+    | 核心          | 线程                       |
+    | :------------ | :------------------------- |
+    | 1 & 超线程    | GameThread                 |
+    | 2 & 超线程    | RenderThread & RTHeartBeat |
+    | 3 & 超线程    | RHIThread    & AudioThread |
+    | 4--N          | 其他                       |
 
   - ## UE5游戏
-    | 核心       | 线程                |
-    | :--------- | :------------------ |
-    | 1 & 超线程 | GameThread          |
-    | 2 & 超线程 | RenderThread        |
-    | 3 & 超线程 | RHIThread           |
-    | 4 & 超线程 | RHISubmissionThread |
-    | 5--N       | 其他                |
+    | 核心       | 线程                               |
+    | :--------- | :--------------------------------- |
+    | 1 & 超线程 | GameThread                         |
+    | 2 & 超线程 | RenderThread & RHISubmissionThread |
+    | 3 & 超线程 | RHIThread                          |
+    | 4--N       | 其他                               |
 
   - ## Unity游戏
     | 核心       | 线程                      |

@@ -1,30 +1,27 @@
 <div align="center">
 
+[Release]: https://github.com/Yukiriri/ReimaginedScheduling/releases
+
 [![Logo](./md/logo-118589293_p02.png)]()
 
-### ReimaginedScheduling
-
-[Release]: https://github.com/Yukiriri/ReimaginedScheduling/releases
+# ReimaginedScheduling
 
 [![Build](https://img.shields.io/github/actions/workflow/status/Yukiriri/ReimaginedScheduling/build.yml?style=for-the-badge)](
   https://github.com/Yukiriri/ReimaginedScheduling/actions/workflows/build.yml
 )
 [![Downloads](https://img.shields.io/github/downloads/Yukiriri/ReimaginedScheduling/total?style=for-the-badge)][Release]
 
+</div>
+
 通过读取前台游戏的线程信息，重新规划线程分配，让重要线程适当独占核心，提高CPU理论渲染性能的天花板，并减少一些波动，帮助高端CPU更上一层楼。  
 Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心玩游戏。  
 由于我拥有的硬件和游戏有限，目前已涵盖范围还比较少，期待能和大家一起完善，如果在特定情况遇到问题或者有建议，欢迎提出。  
 
-</div>
+> [!IMPORTANT]
+> 现在将进入一段长时间的程序重构，开始写UI了  
 
 # 实现原理
 - [核心与线程规划](./md/thread.md)
-
-# 食用前提
-|          |                        |
-| :------- | :--------------------- |
-| 系统版本 | >=24H2（推荐）         |
-| 电源计划 | 系统默认的平衡（推荐） |
 
 # 食用效果
 <details><summary>食用前</summary>
@@ -42,23 +39,18 @@ Intel和AMD都可以用，重点针对AMD改善，让AMD用户可以同等安心
 > 总物理核心低于4核就非常不建议使用了，正如我所说，我的程序是让高端CPU更上一层楼  
 > 除非尝试运行后确认可以缓解某些瓶颈，不然大概率在低核心CPU上会是负优化  
 
-2. 各exe使用方式  
-- ~~`ReimaginedScheduling.CLI.Auto.exe`~~(未完成)  
-  1. 直接运行并保持，直到不需要使用  
-  2. 开始玩游戏  
+1. 各exe使用方式  
 - `ReimaginedScheduling.CLI.Manual.exe`  
   1. 直接运行并保持，直到不需要使用  
   2. 开始玩游戏  
   3. 在游戏中按下提示的快捷键  
-- ~~`ReimaginedScheduling.CLI.Start.exe`~~(未完成)  
+- ~~`ReimaginedScheduling.Start.exe`~~(未完成)  
   传入参数运行（适合搭配快捷方式）  
   ```
-  "...\ReimaginedScheduling.CLI.Start.exe" "...\游戏.exe"
+  "...\ReimaginedScheduling.Start.exe" "...\游戏.exe"
   ```
 - `ReimaginedScheduling.CLI.Viewer.exe`  
   给专业人士采集线程数据并向我提交建议用的  
-- ~~`ReimaginedScheduling.CLI.Modifier.exe`~~(未完成)  
-  与Viewer组合使用  
 > [!NOTE]
 > 修改游戏线程的时效性持续到游戏进程结束，非持久修改  
 
