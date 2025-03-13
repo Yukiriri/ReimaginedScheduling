@@ -1,3 +1,4 @@
+using System.Linq;
 using Windows.System;
 using Windows.Win32;
 
@@ -10,13 +11,8 @@ public class HotKey
         return (PInvoke.GetAsyncKeyState((int)keyCode) & 0x8000) != 0;
     }
 
-    public static bool IsKeyDown(VirtualKey[] keyCodes)
+    public static bool IsKeyDown(params VirtualKey[] keyCodes)
     {
-        foreach (var keyCode in keyCodes)
-        {
-            if (!IsKeyDown(keyCode))
-                return false;
-        }
-        return true;
+        return !keyCodes.Any(keyCode => !IsKeyDown(keyCode));
     }
 }

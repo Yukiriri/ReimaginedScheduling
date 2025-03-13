@@ -1,7 +1,6 @@
 ﻿using ReimaginedScheduling.Common;
 using ReimaginedScheduling.Common.Model;
 using ReimaginedScheduling.Common.Tool;
-using ReimaginedScheduling.Common.Windows.Device;
 using ReimaginedScheduling.Common.Windows.Info;
 using ReimaginedScheduling.Common.Windows.Info.Window;
 using System;
@@ -14,23 +13,20 @@ ProcessRequire.SetLastCPU();
 
 while (true)
 {
-    Console.Write(" Ctrl + PageUp/PageDown\r");
-    for (; !(HotKey.IsKeyDown(VirtualKey.Control) && (HotKey.IsKeyDown(VirtualKey.PageUp) || HotKey.IsKeyDown(VirtualKey.PageDown))); Thread.Sleep(1));
-    var isOn = HotKey.IsKeyDown(VirtualKey.PageUp);
+    Console.Write(" Ctrl + PageUp\r");
+    MyHotkey.WaitPress(VirtualKey.Control, VirtualKey.PageUp);
+
     var wi = new MousePointWindowInfo();
     var pid = wi.CurrentPID;
     var maintid = wi.CurrentTID;
-    Console.Write("                       \r");
-    #if !DEBUG
-    GC.Collect();
-    #endif
+    Console.Clear();
 
-    var threadInfos = ProcessInfo.GetTIDs(pid)
+    var thinfos = ProcessInfo.GetTIDs(pid)
         .Select(x => new ThreadInfo(x))
         .Where(x => x.IsValid && x.CurrentName.Length > 0)
         .Select(x => (x.TID, x.CurrentName));
-    var distribution = TDistributionBuilder.Build([..threadInfos], maintid);
+    var distribution = TDistributionBuilder.Build([..thinfos], maintid);
     MyLogger.Info(distribution.ToLog());
-    distribution.ApplyToProcess(pid, isOn);
-    Thread.Sleep(2000);
+    distribution.ApplyToProcess(pid, true);
+    Thread.Sleep(1200);
 }

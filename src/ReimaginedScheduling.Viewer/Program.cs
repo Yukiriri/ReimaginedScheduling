@@ -1,6 +1,5 @@
 ﻿using ReimaginedScheduling.Common;
 using ReimaginedScheduling.Common.Tool;
-using ReimaginedScheduling.Common.Windows.Device;
 using ReimaginedScheduling.Common.Windows.Info;
 using ReimaginedScheduling.Common.Windows.Info.Window;
 using System;
@@ -10,7 +9,6 @@ using Windows.System;
 
 ProcessRequire.EnableSeDebug();
 ProcessRequire.SetLastCPU();
-// Console.SetWindowSize(Console.WindowWidth + 10, Console.WindowHeight);
 
 bool isPaused = false;
 bool isCullingRow = true;
@@ -21,12 +19,11 @@ while (true)
 {
     Console.Clear();
     Console.Write(" Ctrl + Ins\r");
+    MyHotkey.WaitPress(VirtualKey.Control, VirtualKey.Insert);
 
-    for (; !HotKey.IsKeyDown([VirtualKey.Control, VirtualKey.Insert]); Thread.Sleep(1));
     var wi = new MousePointWindowInfo();
     var pid = wi.CurrentPID;
     var maintid = wi.CurrentTID;
-    var windowName = wi.GetDisplayName(40);
 
     for (var updatetime = 0; pid != 0;)
     {
@@ -39,7 +36,7 @@ while (true)
                 case 'p': isPaused = !isPaused; break;
                 case 'c': isCullingRow = !isCullingRow; break;
                 case 's': isSortCycleTime = !isSortCycleTime; break;
-                case 'n': isHideNameless = !isHideNameless; break;
+                case 'h': isHideNameless = !isHideNameless; break;
             }
         }
         if (++updatetime < 10)
@@ -47,66 +44,61 @@ while (true)
         if (isPaused)
             continue;
         updatetime = 0;
-        #if !DEBUG
-        GC.Collect();
-        #endif
 
-        Console.WriteLine("\r'q': Quit");
-        Console.WriteLine("\r'p': Pause");
-        Console.WriteLine("\r'c': Culling row");
-        Console.WriteLine("\r's': Sort CycleTime");
-        Console.WriteLine("\r'h': Hide Nameless");
-        
+        Console.WriteLine("\r'q': Quit           | 退出");
+        Console.WriteLine("\r'p': Pause          | 暂停");
+        Console.WriteLine("\r'c': Culling row    | 剔除显示");
+        Console.WriteLine("\r's': Sort CycleTime | 降序CycleTime");
+        Console.WriteLine("\r'h': Hide nameless  | 隐藏无名");
+
         var pi = new ProcessInfo(pid);
-        if (pi.IsInvalid)
+        if (pi.IsInvalid || !pi.IsExist())
         {
             pid = 0;
             break;
         }
 
-        var headerstr = $"|   ID|{"Name",-40}|Priority|{"Mask",16}|CpuSets|Ideal|{"CycleTime",24}|";
+        var headerstr =    $"|ID    |{"Name",-40}|Priority|{"Mask",16}|CpuSets|Ideal |{"CycleTime",24}|";
+        var dataformatstr = "|{0,-6}|{1,-40     }|{2,-8  }|{3,16     }|{4,-7 }|{5,-6}|{6,24          }|\n";
         var headersplitstr = new string('-', headerstr.Length);
-        
-        var procstr = "";
-        procstr += $"|{pid,5}";
-        procstr += $"|{windowName}";
-        procstr += $"|{pi.CurrentPriority,8}";
-        procstr += $"|{pi.CurrentMask,16:X}";
-        procstr += $"|{$"({pi.CurrentCpuSetCount})",7}";
-        procstr += $"|{"",5}";
-        procstr += $"|{pi.CurrentCycleTime,24:N0}";
-        procstr += "|\n";
-        
-        var thstr = "";
-        var thinfos = ProcessInfo.GetTIDs(pid).Select(x => new ThreadInfo(x)).Where(x => x.IsValid);
+
+        var datastr = string.Format(dataformatstr,
+            pi.PID,
+            new string([..pi.GetName().Take(40)]),
+            pi.CurrentPriority,
+            $"{pi.CurrentMask:X}",
+            $"{pi.CurrentCpuSets.FirstOrDefault()}({pi.CurrentCpuSetCount})",
+            "",
+            $"{pi.CurrentCycleTime:N0}") + headersplitstr + '\n';
+
+        var thinfos = pi.GetTIDs().Select(x => new ThreadInfo(x)).Where(x => x.IsValid);
         if (isHideNameless)
             thinfos = thinfos.Where(x => x.TID == maintid || x.CurrentName.Length > 0);
         if (isSortCycleTime)
             thinfos = thinfos.OrderByDescending(x => x.CurrentCycleTime);
         foreach (var thinfo in thinfos)
         {
-            thstr += $"|{thinfo.TID,5}";
-            thstr += $"|{new string([..thinfo.CurrentName.Take(40)]),-40}";
-            thstr += $"|{thinfo.CurrentPriority,8}";
-            thstr += $"|{thinfo.CurrentMask,16:X}";
-            thstr += $"|{$"{thinfo.CurrentCpuSets.FirstOrDefault()}({thinfo.CurrentCpuSetCount})",7}";
-            thstr += $"|{thinfo.CurrentIdealNumber,5}";
-            thstr += $"|{thinfo.CurrentCycleTime,24:N0}";
-            thstr += "|\n";
+            datastr += string.Format(dataformatstr,
+                thinfo.TID,
+                new string([..thinfo.CurrentName.Take(40)]),
+                thinfo.CurrentPriority,
+                $"{thinfo.CurrentMask:X}",
+                $"{thinfo.CurrentCpuSets.FirstOrDefault()}({thinfo.CurrentCpuSetCount})",
+                thinfo.CurrentIdealNumber,
+                $"{thinfo.CurrentCycleTime:N0}");
         }
 
-        var str = 
+        var str = "\n" +
+            wi.CurrentName + new string(' ', Math.Max(0, Console.WindowWidth - wi.CurrentName.Length - 1)) + '\n' +
             headersplitstr + '\n' +
             headerstr + '\n' +
             headersplitstr + '\n' +
-            procstr +
-            headersplitstr + '\n' +
-            thstr +
+            datastr +
             headersplitstr;
         foreach (var s in str.Split('\n'))
         {
             if (isCullingRow && Console.CursorTop >= Console.WindowHeight - 1)
-                continue;
+                break;
             Console.WriteLine(s);
         }
         MyConsole.FillConsole();

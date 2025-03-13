@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Win32.SafeHandles;
 using Windows.Win32;
 using Windows.Win32.System.Diagnostics.ToolHelp;
@@ -81,8 +82,9 @@ public class ProcessInfo
         }
     }
 
-    public static unsafe string GetName(uint PID)
+    private static unsafe List<PROCESSENTRY32> GetProcessList()
     {
+        var list = new List<PROCESSENTRY32>();
         using var hsnap = PInvoke.CreateToolhelp32Snapshot_SafeHandle(CREATE_TOOLHELP_SNAPSHOT_FLAGS.TH32CS_SNAPPROCESS, 0);
         var pe32 = new PROCESSENTRY32()
         {
@@ -90,17 +92,29 @@ public class ProcessInfo
         };
         if (PInvoke.Process32First(hsnap, ref pe32)) do
         {
-            if (pe32.th32ProcessID == PID)
-            {
-                return new string((sbyte*)&pe32.szExeFile._0);
-            }
+            list.Add(pe32);
         } while (PInvoke.Process32Next(hsnap, ref pe32));
-        return "";
+        return list;
     }
 
-    public static unsafe List<uint> GetTIDs(uint PID)
+    public static unsafe string GetName(uint PID)
     {
-        var list = new List<uint>();
+        var pe32 = GetProcessList().FirstOrDefault(x => x.th32ProcessID == PID);
+        return new string((sbyte*)&pe32.szExeFile._0);
+    }
+
+    public string GetName() => GetName(PID);
+
+    public static bool IsExist(uint PID)
+    {
+        return GetProcessList().Any(x => x.th32ProcessID == PID);
+    }
+
+    public bool IsExist() => IsExist(PID);
+
+    private static unsafe List<THREADENTRY32> GetThreadList()
+    {
+        var list = new List<THREADENTRY32>();
         using var hsnap = PInvoke.CreateToolhelp32Snapshot_SafeHandle(CREATE_TOOLHELP_SNAPSHOT_FLAGS.TH32CS_SNAPTHREAD, 0);
         var te32 = new THREADENTRY32()
         {
@@ -108,13 +122,20 @@ public class ProcessInfo
         };
         if (PInvoke.Thread32First(hsnap, ref te32)) do
         {
-            if (te32.th32OwnerProcessID == PID)
-            {
-                list.Add(te32.th32ThreadID);
-            }
+            list.Add(te32);
         } while (PInvoke.Thread32Next(hsnap, ref te32));
         return list;
     }
+
+    public static List<uint> GetTIDs(uint PID)
+    {
+        return GetThreadList()
+            .Where(x => x.th32OwnerProcessID == PID)
+            .Select(x => x.th32ThreadID)
+            .ToList();
+    }
+
+    public List<uint> GetTIDs() => GetTIDs(PID);
 
     private readonly SafeFileHandle? _hProcess;
 }

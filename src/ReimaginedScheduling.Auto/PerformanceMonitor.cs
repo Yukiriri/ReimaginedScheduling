@@ -51,7 +51,7 @@ public class PerformanceMonitor
                 {
                     if (PInvoke.PdhGetFormattedCounterArray(hCounter, counterType, ref arrSize, out _, ptr) == 0)
                     {
-                        return arr[0..(int)arrCount].Select(x => (x.szName.ToString(), x.FmtValue)).ToArray();
+                        return [.. arr[0..(int)arrCount].Select(x => (x.szName.ToString(), x.FmtValue))];
                     }
                 }
             }

@@ -73,35 +73,36 @@ public class CPUSetInfo
 
     public static string ToLog()
     {
-        string[] description = ["", "", ""];
-        if (PCoreEfficiencyIndex < 3)
-        {
-            if (PCoreEfficiencyIndex >= 2) description[PCoreEfficiencyIndex - 2] = "LPE";
-            if (PCoreEfficiencyIndex >= 1) description[PCoreEfficiencyIndex - 1] = "E";
-            if (PCoreEfficiencyIndex >= 0) description[PCoreEfficiencyIndex - 0] = "P";
-        }
-
-        var cpustr = "";
-        foreach (var cs in CoreSets)
-        {
-            cpustr += $"|{cs.Anonymous.CpuSet.Group,-5}";
-            cpustr += $"|{cs.Anonymous.CpuSet.Id,-3}";
-            cpustr += $"|{cs.Anonymous.CpuSet.CoreIndex,-3}";
-            cpustr += $"|{cs.Anonymous.CpuSet.LogicalProcessorIndex,-3}";
-            cpustr += $"|{description[cs.Anonymous.CpuSet.EfficiencyClass],-4}";
-            cpustr += $"|{cs.Anonymous.CpuSet.Anonymous2.SchedulingClass,-8}";
-            cpustr += "|\n";
-        }
-
-        var headerstr = "|Group|ID |PI |LI |Type|Priority|";
+        var headerstr =     "|Group |ID    |PhysicalI|LogicalI |Type  |Priority|";
+        var dataformatstr = "|{0,-6}|{1,-6}|{2,-9   }|{3,-9}   |{4,-6}|{5,-8  }|\n";
         var headersplitstr = new string('-', headerstr.Length);
-        var str = 
+
+        var coretypestr = new string[]{"", "", ""};
+        if (PCoreEfficiencyIndex < coretypestr.Length)
+        {
+            if (PCoreEfficiencyIndex >= 2) coretypestr[PCoreEfficiencyIndex - 2] = "LPE";
+            if (PCoreEfficiencyIndex >= 1) coretypestr[PCoreEfficiencyIndex - 1] = "E";
+            if (PCoreEfficiencyIndex >= 0) coretypestr[PCoreEfficiencyIndex - 0] = "P";
+        }
+
+        var datastr = "";
+        foreach (var coresets in CoreSets)
+        {
+            datastr += string.Format(dataformatstr,
+                coresets.Anonymous.CpuSet.Group,
+                coresets.Anonymous.CpuSet.Id,
+                coresets.Anonymous.CpuSet.CoreIndex,
+                coresets.Anonymous.CpuSet.LogicalProcessorIndex,
+                coretypestr[coresets.Anonymous.CpuSet.EfficiencyClass],
+                coresets.Anonymous.CpuSet.Anonymous2.SchedulingClass);
+        }
+
+        return "\n" +
             headersplitstr + '\n' +
             headerstr + '\n' +
             headersplitstr + '\n' +
-            cpustr +
+            datastr +
             headersplitstr + '\n' +
             $"{PhysicalPCores.Count}P + {ECores.Count}E";
-        return str;
     }
 }

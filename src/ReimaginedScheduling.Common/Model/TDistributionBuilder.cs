@@ -1,5 +1,4 @@
 using ReimaginedScheduling.Common.Windows.Info;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -11,102 +10,85 @@ public class TDistributionBuilder
     private struct DistributionModel
     {
         public Regex EnginePattern;
-        public struct Fixed(int CoreIndex, Regex ThreadName)
-        {
-            public int CoreIndex = CoreIndex;
-            public Regex ThreadName = ThreadName;
-        }
-        public Fixed[] Fixeds;
-        public Regex[] Rotations;
+        public List<Regex> ThreadPatterns;
     }
-    private static readonly DistributionModel[] _distributionModels =
+    private static readonly List<DistributionModel> _distributionModels =
     [
         new DistributionModel()
         {
-            EnginePattern = new(@"TaskGraphThread.P"), //UE4
-            Fixeds =
+            EnginePattern = new(@"^TaskGraphThread.P \d+"), //UE4
+            ThreadPatterns =
             [
-                // new(0, new(@"")),
-                new(1, new(@"(RenderThread \d)|(RTHeartBeat \d)")),
-                new(2, new(@"(RHIThread)|(Audio.*Thread)")),
-            ],
-            Rotations =
-            [
-                new(@"TaskGraphThread.P \d"),
-                new(@"ThreadPool Thread-\d"),
+                new(@"^RenderThread"),
+                new(@"^RHIThread"),
+                // new(new(@"^TaskGraphThreadHP \d+")),
             ]
         },
         new DistributionModel()
         {
-            EnginePattern = new(@"ground Worker #"), //UE5
-            Fixeds =
+            EnginePattern = new(@"ground Worker #\d+"), //UE5
+            ThreadPatterns =
             [
-                new(1, new(@"(RenderThread \d)|(RHISubmissionThread)")),
-                new(2, new(@"RHIThread")),
-            ],
-            Rotations =
-            [
-                // new(@"ground Worker #\d(?!.+)"),
+                new(@"^RenderThread"),
+                new(@"^RHIThread"),
+                new(@"^RHISubmissionThread"),
+                new(@"^Foreground Worker"),
             ]
         },
         new DistributionModel()
         {
-            EnginePattern = new(@"Unity"),
-            Fixeds =
+            EnginePattern = new(@"^Unity.+"),
+            ThreadPatterns =
             [
-                new(1, new(@"UnityMultiRenderingThread")),
-                new(2, new(@"UnityGfxDeviceWorker")),
-            ],
-            Rotations =
-            [
+                new(@"^UnityMultiRenderingThread"),
+                new(@"^UnityGfxDeviceWorker"),
             ]
         },
         new DistributionModel()
         {
-            EnginePattern = new(@"Render.*(T|t)hread"),
-            Fixeds =
+            EnginePattern = new(@".+"),
+            ThreadPatterns =
             [
-                new(1, new(@"Render.*(T|t)hread")),
-            ],
-            Rotations = []
+                new(@"Render.*(T|t)hread"),
+            ]
         },
     ];
 
-    public static TDistribution Build(List<(uint TID, string TName)> threadInfos, uint mainTID)
+    public static TDistribution Build(List<(uint TID, string Name)> threadInfos, uint mainTID)
     {
         var distribution = new TDistribution()
         {
-            Attributions = [new(mainTID, "GameThread", CPUSetInfo.UniqueCores[0])]
+            Attributions = [new(mainTID, "GameThread", CPUSetInfo.UniqueCores[0], CPUSetInfo.UniqueCores[0].Last() - CPUSetInfo.BeginCPUID)]
         };
-        var maxUsed = 0;
+        threadInfos = [..threadInfos.Where(x => x.TID != mainTID)];
+        var usedCount = distribution.Attributions.Count;
+        var maxAvailableCount = CPUSetInfo.PhysicalPCores.Count / 2;
+
         foreach (var distributionModel in _distributionModels)
         {
-            if (threadInfos.Where(x => distributionModel.EnginePattern.IsMatch(x.TName)).Any())
+            if (threadInfos.Any(x => distributionModel.EnginePattern.IsMatch(x.Name)))
             {
-                foreach (var fixeds in distributionModel.Fixeds)
+                foreach (var threadPattern in distributionModel.ThreadPatterns)
                 {
-                    if (fixeds.CoreIndex < CPUSetInfo.PhysicalPCores.Count)
+                    if (usedCount < maxAvailableCount)
                     {
-                        var minfos = threadInfos
-                            .Where(x => fixeds.ThreadName.IsMatch(x.TName))
-                            .Select(x => new TDistribution.Attribution(x.TID, x.TName, CPUSetInfo.UniqueCores[fixeds.CoreIndex]));
-                        distribution.Attributions = [..distribution.Attributions, ..minfos];
+                        distribution.Attributions.AddRange(threadInfos
+                            .Where(x => threadPattern.IsMatch(x.Name))
+                            .Take(maxAvailableCount - usedCount)
+                            .Select(x =>
+                            {
+                                var cpuids = CPUSetInfo.UniqueCores[usedCount++];
+                                return new TDistribution.Attribution(x.TID, x.Name, cpuids, cpuids[0] - CPUSetInfo.BeginCPUID);
+                            }));
                     }
+                    else break;
                 }
-                maxUsed = Math.Min(distributionModel.Fixeds.Max(x => x.CoreIndex) + 1, CPUSetInfo.PhysicalPECores.Count - 1);
-                // if (distributionModel.Fixeds.Max(x => x.CoreIndex) < CPUSetInfo.PhysicalPCores.Count)
-                // {
-                //     foreach (var rotation in distributionModel.Rotations)
-                //     {
-                //     }
-                // }
                 break;
             }
-        }
-        // distribution.SharedCPUIDs = CPUSetInfo.UniqueCores[maxUsed..].SelectMany(x => x).ToList();
-        distribution.SharedCPUIDs = CPUSetInfo.PhysicalPECores[maxUsed..];
+        };
+        // distribution.SharedCPUIDs = [..CPUSetInfo.UniqueCores[usedCount..].SelectMany(x => x)];
+        distribution.SharedCPUIDs = CPUSetInfo.PhysicalPECores[usedCount..];
 
         return distribution;
     }
-    
 }
