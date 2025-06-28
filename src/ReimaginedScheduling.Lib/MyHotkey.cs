@@ -5,7 +5,7 @@ namespace ReimaginedScheduling.Lib;
 
 public static class MyHotkey
 {
-    public static void waitPress(params VirtualKey[] key_codes)
+    public static void waitDown(params VirtualKey[] key_codes)
     {
         for (; !key_codes.All(KeyState.isDown); Thread.Sleep(1));
     }

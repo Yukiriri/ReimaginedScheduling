@@ -16,7 +16,7 @@ for (;; Thread.Sleep(1))
 {
     Console.Clear();
     Console.Write(" Ctrl + Ins \r");
-    MyHotkey.waitPress(VirtualKey.Control, VirtualKey.Insert);
+    MyHotkey.waitDown(VirtualKey.Control, VirtualKey.Insert);
 
     var w_info = WindowInfo.getMousePointWindow();
     var pid = w_info.ownerProcessId;

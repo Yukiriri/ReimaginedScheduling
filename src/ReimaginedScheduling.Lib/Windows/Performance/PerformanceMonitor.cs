@@ -25,7 +25,7 @@ public class PerformanceMonitor
 
     private double getGpuUsage(Regex pattern)
     {
-        return getCounterValue(@"\GPU Engine(*)\Utilization Percentage", PDH_FMT.PDH_FMT_DOUBLE)
+        return getCounterValues(@"\GPU Engine(*)\Utilization Percentage", PDH_FMT.PDH_FMT_DOUBLE)
             .Where(v => pattern.IsMatch(v.name))
             .Select(x => x.value.Anonymous.doubleValue)
             .Aggregate((sum, next) => sum + next);
@@ -37,34 +37,32 @@ public class PerformanceMonitor
 
     private ulong getGpuMemUsage(Regex pattern)
     {
-        return getCounterValue(@"\GPU Process Memory(*)\Dedicated Usage", PDH_FMT.PDH_FMT_LARGE)
+        return getCounterValues(@"\GPU Process Memory(*)\Dedicated Usage", PDH_FMT.PDH_FMT_LARGE)
             .Where(v => pattern.IsMatch(v.name))
             .Select(x => (ulong)x.value.Anonymous.largeValue)
             .Aggregate((sum, next) => sum + next);
     }
 
-    private unsafe (string name, PDH_FMT_COUNTERVALUE value)[] getCounterValue(string counterName, PDH_FMT counterType)
+    private unsafe (string name, PDH_FMT_COUNTERVALUE value)[] getCounterValues(string counter_name, PDH_FMT counter_type)
     {
-        if (counterList.TryGetValue(counterName, out var hCounter))
+        if (counterList.TryGetValue(counter_name, out var hCounter))
         {
-            var arrSize = 0u;
-            if (PInvoke.PdhGetFormattedCounterArray(hCounter, counterType, ref arrSize, out var arrCount, null) == 0x800007D2)
+            var arr_size = 0u;
+            if (PInvoke.PdhGetFormattedCounterArray(hCounter, counter_type, ref arr_size, out var arr_length, null) == 0x800007D2)
             {
-                var arr = new PDH_FMT_COUNTERVALUE_ITEM_W[arrSize / sizeof(PDH_FMT_COUNTERVALUE_ITEM_W)];
+                var arr = new PDH_FMT_COUNTERVALUE_ITEM_W[arr_size / sizeof(PDH_FMT_COUNTERVALUE_ITEM_W)];
                 fixed (PDH_FMT_COUNTERVALUE_ITEM_W* ptr = arr)
                 {
-                    if (PInvoke.PdhGetFormattedCounterArray(hCounter, counterType, ref arrSize, out _, ptr) == 0)
+                    if (PInvoke.PdhGetFormattedCounterArray(hCounter, counter_type, ref arr_size, out _, ptr) == 0)
                     {
-                        return arr.Take((int)arrCount)
-                            .Select(x => (x.szName.ToString(), x.FmtValue))
-                            .ToArray();
+                        return [..arr.Take((int)arr_length).Select(x => (x.szName.ToString(), x.FmtValue))];
                     }
                 }
             }
         }
         else
         {
-            addCounter(counterName);
+            addCounter(counter_name);
         }
         return [];
     }
@@ -74,13 +72,13 @@ public class PerformanceMonitor
         return PInvoke.PdhCollectQueryData(hQuery) == 0;
     }
 
-    private bool addCounter(string counterName)
+    private bool addCounter(string counter_name)
     {
-        if (!counterList.ContainsKey(counterName))
+        if (!counterList.ContainsKey(counter_name))
         {
-            if (PInvoke.PdhAddCounter(hQuery, counterName, 0, out var phCounter) == 0)
+            if (PInvoke.PdhAddCounter(hQuery, counter_name, 0, out var phCounter) == 0)
             {
-                counterList[counterName] = phCounter;
+                counterList[counter_name] = phCounter;
                 return true;
             }
         }

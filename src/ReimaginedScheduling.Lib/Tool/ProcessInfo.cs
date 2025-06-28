@@ -14,9 +14,7 @@ public static class ProcessInfo
     
     public static List<int> listThreadIds(int process_id)
     {
-        return listThreads(process_id)
-            .Select(x => x.Id)
-            .ToList();
+        return [..listThreads(process_id).Select(x => x.Id)];
     }
     
 }
