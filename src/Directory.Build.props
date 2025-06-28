@@ -1,0 +1,18 @@
+<Project>
+
+    <PropertyGroup>
+        <BaseOutputPath>..\..\bin\$(MSBuildProjectName)</BaseOutputPath>
+        <BaseIntermediateOutputPath>..\..\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
+        <Company>github.com/Yukiriri</Company>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <DebugType>none</DebugType>
+        <OptimizationPreference>Speed</OptimizationPreference>
+    </PropertyGroup>
+    
+</Project>

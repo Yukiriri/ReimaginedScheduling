@@ -1,19 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <ApplicationIcon>Program.ico</ApplicationIcon>
-        <ApplicationManifest>Program.manifest</ApplicationManifest>
         <TargetFramework>net481</TargetFramework>
         <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
         <TargetPlatformVersion>10.0.19041.0</TargetPlatformVersion>
     </PropertyGroup>
     
     <ItemGroup>
-        <ProjectReference Include="..\ReimaginedScheduling.Lib\ReimaginedScheduling.Lib.csproj" />
-        <PackageReference Include="Costura.Fody" Version="6.0.0">
+        <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.183">
             <PrivateAssets>All</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="Microsoft.Windows.SDK.Contracts" Version="10.0.19041.1" />
+        <PackageReference Include="System.Memory" Version="4.6.3" />
     </ItemGroup>
     
 </Project>

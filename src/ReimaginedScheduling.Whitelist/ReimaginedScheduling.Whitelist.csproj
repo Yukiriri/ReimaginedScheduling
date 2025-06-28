@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    
+
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <ApplicationIcon>Program.ico</ApplicationIcon>
@@ -8,7 +8,7 @@
         <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
         <TargetPlatformVersion>10.0.19041.0</TargetPlatformVersion>
     </PropertyGroup>
-    
+
     <ItemGroup>
         <ProjectReference Include="..\ReimaginedScheduling.Lib\ReimaginedScheduling.Lib.csproj" />
         <PackageReference Include="Costura.Fody" Version="6.0.0">

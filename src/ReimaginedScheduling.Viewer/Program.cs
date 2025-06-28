@@ -1,107 +1,93 @@
-﻿using ReimaginedScheduling.Common;
-using ReimaginedScheduling.Common.Tool;
-using ReimaginedScheduling.Common.Windows.Info;
-using ReimaginedScheduling.Common.Windows.Info.Window;
-using System;
-using System.Linq;
-using System.Threading;
+﻿using System.Diagnostics;
 using Windows.System;
+using ReimaginedScheduling.Lib;
+using ReimaginedScheduling.Lib.Tool;
+using ReimaginedScheduling.Lib.Windows.Info;
 
-ProcessRequire.EnableSeDebug();
-ProcessRequire.SetLastCPU();
+ProcessRequire.setLastCpu();
+ProcessRequire.enableSeDebug();
 
-bool isPaused = false;
-bool isCullingRow = true;
-bool isSortCycleTime = true;
-bool isHideNameless = true;
+var is_paused = false;
+var is_culling_row = true;
+var is_sort_cycletime = true;
+var is_hide_nameless = true;
 
-while (true)
+for (;; Thread.Sleep(1))
 {
     Console.Clear();
-    Console.Write(" Ctrl + Ins\r");
-    MyHotkey.WaitPress(VirtualKey.Control, VirtualKey.Insert);
+    Console.Write(" Ctrl + Ins \r");
+    MyHotkey.waitPress(VirtualKey.Control, VirtualKey.Insert);
 
-    var wi = new MousePointWindowInfo();
-    var pid = wi.CurrentPID;
-    var maintid = wi.CurrentTID;
+    var w_info = WindowInfo.getMousePointWindow();
+    var pid = w_info.ownerProcessId;
+    var main_tid = w_info.ownerThreadId;
 
-    for (var updatetime = 0; pid != 0;)
+    for (var update_ticks = 0; pid != 0; Thread.Sleep(100))
     {
-        Thread.Sleep(100);
         while (Console.KeyAvailable)
         {
             switch (Console.ReadKey().KeyChar)
             {
                 case 'q': pid = 0; break;
-                case 'p': isPaused = !isPaused; break;
-                case 'c': isCullingRow = !isCullingRow; break;
-                case 's': isSortCycleTime = !isSortCycleTime; break;
-                case 'h': isHideNameless = !isHideNameless; break;
+                case 'p': is_paused = !is_paused; break;
+                case 'c': is_culling_row = !is_culling_row; break;
+                case 's': is_sort_cycletime = !is_sort_cycletime; break;
+                case 'h': is_hide_nameless = !is_hide_nameless; break;
             }
         }
-        if (++updatetime < 10)
-            continue;
-        if (isPaused)
-            continue;
-        updatetime = 0;
+        if (++update_ticks < 10) continue;
+        if (is_paused) continue;
+        update_ticks = 0;
+        Console.WriteLine("'q': Quit           | 退出 \r");
+        Console.WriteLine("'p': Pause          | 暂停");
+        Console.WriteLine("'c': Culling row    | 剔除显示");
+        Console.WriteLine("'s': Sort CycleTime | 降序CycleTime");
+        Console.WriteLine("'h': Hide nameless  | 隐藏无名");
 
-        Console.WriteLine("\r'q': Quit           | 退出");
-        Console.WriteLine("\r'p': Pause          | 暂停");
-        Console.WriteLine("\r'c': Culling row    | 剔除显示");
-        Console.WriteLine("\r's': Sort CycleTime | 降序CycleTime");
-        Console.WriteLine("\r'h': Hide nameless  | 隐藏无名");
-
-        var pi = new ProcessInfo(pid);
-        if (pi.IsInvalid || !pi.IsExist())
+        var process = Process.GetProcessById(pid);
+        if (process.HasExited)
         {
-            pid = 0;
             break;
         }
+        var p_cpu_info = new ProcessCpuInfo(pid);
+        var t_cpu_infos = ProcessInfo.listThreadIds(pid).Select(x => new ThreadCpuInfo(x)).Where(x => x.isValid);
+        if (is_hide_nameless)
+            t_cpu_infos = t_cpu_infos.Where(x => x.threadId == main_tid || x.currentName.Length > 0);
+        if (is_sort_cycletime)
+            t_cpu_infos = t_cpu_infos.OrderByDescending(x => x.currentCycleTime);
 
-        var headerstr =    $"|ID    |{"Name",-40}|Priority|{"Mask",16}|CpuSets|Ideal |{"CycleTime",24}|";
-        var dataformatstr = "|{0,-6}|{1,-40     }|{2,-8  }|{3,16     }|{4,-7 }|{5,-6}|{6,24          }|\n";
-        var headersplitstr = new string('-', headerstr.Length);
-
-        var datastr = string.Format(dataformatstr,
-            pi.PID,
-            new string([..pi.GetName().Take(40)]),
-            pi.CurrentPriority,
-            $"{pi.CurrentMask:X}",
-            $"{pi.CurrentCpuSets.FirstOrDefault()}({pi.CurrentCpuSetCount})",
-            "",
-            $"{pi.CurrentCycleTime:N0}") + headersplitstr + '\n';
-
-        var thinfos = pi.GetTIDs().Select(x => new ThreadInfo(x)).Where(x => x.IsValid);
-        if (isHideNameless)
-            thinfos = thinfos.Where(x => x.TID == maintid || x.CurrentName.Length > 0);
-        if (isSortCycleTime)
-            thinfos = thinfos.OrderByDescending(x => x.CurrentCycleTime);
-        foreach (var thinfo in thinfos)
+        var tb_header =  $"|ID    |{"Name",-40}|Priority|{"Mask",-16}|CpuSets|Ideal |{"CycleTime",24}|\n";
+        var tb_fmt_data = "|{0,-6}|{1,-40     }|{2,-8  }|{3,-16     }|{4,-7 }|{5,-6}|{6,24          }|\n";
+        var tb_header_split = new string('-', tb_header.Length - 1) + "\n";
+        var tb_final_str = $"\n{w_info.currentName}   \n"
+                           + tb_header_split
+                           + tb_header
+                           + tb_header_split
+                           + string.Format(tb_fmt_data,
+                               process.Id,
+                               new string([..process.ProcessName.Take(40)]),
+                               process.PriorityClass,
+                               $"{p_cpu_info.currentCpuMask:X}",
+                               $"{p_cpu_info.currentCpuSets.FirstOrDefault()}({p_cpu_info.currentCpuSetCount})",
+                               "",
+                               $"{p_cpu_info.currentCycleTime:N0}")
+                           + tb_header_split
+                           + string.Join("", t_cpu_infos.Select(x => string.Format(tb_fmt_data,
+                               x.threadId,
+                               new string([..x.currentName.Take(40)]),
+                               x.currentPriority,
+                               $"{x.currentCpuMask:X}",
+                               $"{x.currentCpuSets.FirstOrDefault()}({x.currentCpuSetCount})",
+                               x.currentCpuIdealNumber,
+                               $"{x.currentCycleTime:N0}")))
+                           + tb_header_split;
+        foreach (var s in tb_final_str.Split('\n'))
         {
-            datastr += string.Format(dataformatstr,
-                thinfo.TID,
-                new string([..thinfo.CurrentName.Take(40)]),
-                thinfo.CurrentPriority,
-                $"{thinfo.CurrentMask:X}",
-                $"{thinfo.CurrentCpuSets.FirstOrDefault()}({thinfo.CurrentCpuSetCount})",
-                thinfo.CurrentIdealNumber,
-                $"{thinfo.CurrentCycleTime:N0}");
-        }
-
-        var str = "\n" +
-            wi.CurrentName + new string(' ', Math.Max(0, Console.WindowWidth - wi.CurrentName.Length - 1)) + '\n' +
-            headersplitstr + '\n' +
-            headerstr + '\n' +
-            headersplitstr + '\n' +
-            datastr +
-            headersplitstr;
-        foreach (var s in str.Split('\n'))
-        {
-            if (isCullingRow && Console.CursorTop >= Console.WindowHeight - 1)
+            if (is_culling_row && Console.CursorTop >= Console.WindowHeight - 1)
                 break;
             Console.WriteLine(s);
         }
-        MyConsole.FillConsole();
-        MyConsole.ScrollToTop();
+        MyConsole.fillSpace();
+        MyConsole.scrollToTop();
     }
 }
