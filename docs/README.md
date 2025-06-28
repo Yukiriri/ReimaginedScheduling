@@ -42,7 +42,7 @@ Intel和AMD都可以用，重点针对AMD改善。
 2. 各exe使用方式  
 - `ReimaginedScheduling.Whitelist.exe`  
   1. 直接运行并保持，直到不需要使用  
-  2. 把游戏进程名写入同目录的`ReimaginedScheduling.Main.txt`，每一行一个exe  
+  2. 把游戏进程名写入同目录的`ReimaginedScheduling.Whitelist.save.txt`，每一行一个exe  
   3. 开始玩游戏  
 - `ReimaginedScheduling.Viewer.exe`  
   给专业人士收集线程数据并向我提交建议用的  
