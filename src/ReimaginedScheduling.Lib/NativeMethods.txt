@@ -17,6 +17,7 @@ GetCurrentThreadId
 OpenThread
 GetThreadPriority
 SetThreadPriority
+SetThreadAffinityMask
 GetThreadGroupAffinity
 SetThreadGroupAffinity
 GetThreadSelectedCpuSets

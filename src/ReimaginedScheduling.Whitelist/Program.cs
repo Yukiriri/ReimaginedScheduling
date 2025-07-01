@@ -18,24 +18,32 @@ for (;;Thread.Sleep(1))
         exe_list = [..MyHotSaved.reload().Split('\n').Select(x => x.TrimEnd('\r', '\n'))];
     }
 
-    var ms = currentMs();
-    var matched_processes = new List<Process>(Process.GetProcesses()
-        .Where(x => exe_list.Contains($"{x.ProcessName}.exe")));
-    matched_processes.ForEach(x => Console.WriteLine($"* {x.ProcessName}.exe"));
-    Console.WriteLine();
-
-    var t_cpu_infos = new List<ThreadCpuInfo>(matched_processes
-        .SelectMany(process => ProcessInfo.listThreadIds(process.Id))
-        .Select(x => new ThreadCpuInfo(x)));
-    Console.WriteLine($"all thread count: {t_cpu_infos.Count,-4} load: {currentMs() - ms}ms   ");
-
-    for (var core_index = 0; core_index < CpuSetInfo.PCores.Count; core_index++)
+    try
     {
-        t_cpu_infos.ForEach(x =>
+        var ms = currentMs();
+        var matched_processes = new List<Process>(Process.GetProcesses()
+            .Where(x => exe_list.Contains(x.ProcessName)));
+        matched_processes.ForEach(x => Console.WriteLine($"* {x.ProcessName}"));
+        Console.WriteLine();
+        var t_cpu_infos = new List<ThreadCpuInfo>(matched_processes
+            .SelectMany(process => ProcessBaseInfo.listThreadIds(process.Id))
+            .Select(x => new ThreadCpuInfo(x))
+            .Where(x => x.isValid));
+        Console.WriteLine($"load: {currentMs() - ms}ms / thread count: {t_cpu_infos.Count,-4}   ");
+
+        for (var core_index = 0; core_index < CpuSetInfo.PCores.Count; core_index++)
         {
-            x.currentCpuIdealNumber = core_index;
-        });
-        Console.Write($"core index: {core_index,-3}\r");
-        Thread.Sleep(rotation_interval);
+            t_cpu_infos.ForEach(x =>
+            {
+                x.currentCpuIdealNumber = core_index;
+            });
+            Console.Write($"interval: {rotation_interval}ms / core index: {core_index,-3}   \r");
+            Thread.Sleep(rotation_interval);
+        }
+    }
+    catch (Exception e)
+    {
+        MyLogger.info(e.ToString());
+        Thread.Sleep(1000);
     }
 }

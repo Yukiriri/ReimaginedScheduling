@@ -18,7 +18,7 @@ public class WindowInfo
     public static WindowInfo getMousePointWindow()
     {
         PInvoke.GetCursorPos(out var lpPoint);
-        return new WindowInfo(PInvoke.WindowFromPoint(lpPoint));
+        return new(PInvoke.WindowFromPoint(lpPoint));
     }
     
     public string currentName => Process.GetProcessById(ownerProcessId).MainWindowTitle;

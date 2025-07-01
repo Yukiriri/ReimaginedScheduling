@@ -1,34 +1,11 @@
-﻿using Microsoft.Win32.SafeHandles;
-using Windows.Win32;
-using Windows.Win32.System.Threading;
+﻿using Windows.Win32;
 
 namespace ReimaginedScheduling.Lib.Windows.Info;
 
-public class ProcessCpuInfo
+public class ProcessCpuInfo(int process_id) : ProcessBaseInfo(process_id)
 {
-    private readonly SafeFileHandle hProcess;
-    public int processId { get; private set; }
-    public bool isInvalid => hProcess.IsInvalid;
-    public bool isValid => !isInvalid;
-
-    public ProcessCpuInfo(int process_id)
-    {
-        processId = process_id;
-        hProcess = PInvoke.OpenProcess_SafeHandle(
-            PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_INFORMATION |
-            PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION |
-            PROCESS_ACCESS_RIGHTS.PROCESS_SET_INFORMATION |
-            PROCESS_ACCESS_RIGHTS.PROCESS_SET_LIMITED_INFORMATION, false, (uint)processId);
-    }
-
-    public static ProcessCpuInfo getCurrentProcessCpuInfo() => new ProcessCpuInfo((int)PInvoke.GetCurrentProcessId());
+    public new static ProcessCpuInfo getCurrentProcess() => new((int)PInvoke.GetCurrentProcessId());
     
-    public uint currentPriority
-    {
-        get => PInvoke.GetPriorityClass(hProcess);
-        set => PInvoke.SetPriorityClass(hProcess, (PROCESS_CREATION_FLAGS)value);
-    }
-
     public nuint currentCpuMask
     {
         get
@@ -65,15 +42,6 @@ public class ProcessCpuInfo
         {
             PInvoke.GetProcessDefaultCpuSetMasks(hProcess, new(), out var requiredMaskCount);
             return requiredMaskCount;
-        }
-    }
-
-    public ulong currentCycleTime
-    {
-        get
-        {
-            PInvoke.QueryProcessCycleTime(hProcess, out var cycleTime);
-            return cycleTime;
         }
     }
 

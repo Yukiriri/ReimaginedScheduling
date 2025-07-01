@@ -9,6 +9,6 @@ public static class ProcessRequire
 
     public static void setLastCpu()
     {
-        ProcessCpuInfo.getCurrentProcessCpuInfo().currentCpuSets = [CpuSetInfo.PECores.Last()];
+        ProcessCpuInfo.getCurrentProcess().currentCpuSets = [CpuSetInfo.PECores.Last()];
     }
 }

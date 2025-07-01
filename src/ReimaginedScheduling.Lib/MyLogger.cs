@@ -8,16 +8,16 @@ public static class MyLogger
     private static readonly StreamWriter logger = new(fileName);
     private static string currentLoggerTime => $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}";
 
-    public static void debug(string message)
-    {
-        logger.WriteLine($"[{currentLoggerTime}] {message}");
-        logger.Flush();
-    }
-
     public static void info(string message)
     {
         Console.WriteLine($"[{currentLoggerTime}] {message}");
         debug(message);
+    }
+
+    public static void debug(string message)
+    {
+        logger.WriteLine($"[{currentLoggerTime}] {message}");
+        logger.Flush();
     }
 
 }

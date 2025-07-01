@@ -11,7 +11,7 @@
     
     <ItemGroup>
         <ProjectReference Include="..\ReimaginedScheduling.Lib\ReimaginedScheduling.Lib.csproj" />
-        <PackageReference Include="Costura.Fody" Version="6.0.0">
+        <PackageReference Include="Costura.Fody" Version="6.0.0" Condition=" '$(Configuration)' == 'Release' ">
             <PrivateAssets>All</PrivateAssets>
         </PackageReference>
     </ItemGroup>
