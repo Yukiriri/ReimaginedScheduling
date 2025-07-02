@@ -12,7 +12,6 @@ var exe_list = new List<string>();
 
 for (;;Thread.Sleep(1))
 {
-    Console.Clear();
     if (MyHotSaved.isChanged())
     {
         exe_list = [..MyHotSaved.reload().Split('\n').Select(x => x.TrimEnd('\r', '\n'))];
@@ -20,13 +19,23 @@ for (;;Thread.Sleep(1))
 
     try
     {
+        Console.Clear();
         var ms = currentMs();
-        var matched_processes = new List<Process>(Process.GetProcesses()
-            .Where(x => exe_list.Contains(x.ProcessName)));
-        matched_processes.ForEach(x => Console.WriteLine($"* {x.ProcessName}"));
+        
+        var matched_processes = new List<ProcessBaseInfo>(Process.GetProcesses()
+            .Where(x => exe_list.Contains($"{x.ProcessName}.exe"))
+            .Select(x => new ProcessBaseInfo(x.Id))
+            .Where(x => x.isValid));
+        matched_processes.ForEach(x =>
+        {
+            if (x.currentPriority < (uint)ProcessPriorityClass.High)
+                x.currentPriority = (uint)ProcessPriorityClass.High;
+            Console.WriteLine($"* {x.exeName}");
+        });
         Console.WriteLine();
+        
         var t_cpu_infos = new List<ThreadCpuInfo>(matched_processes
-            .SelectMany(process => ProcessBaseInfo.listThreadIds(process.Id))
+            .SelectMany(x => ProcessBaseInfo.listThreadIds(x.id))
             .Select(x => new ThreadCpuInfo(x))
             .Where(x => x.isValid));
         Console.WriteLine($"load: {currentMs() - ms}ms / thread count: {t_cpu_infos.Count,-4}   ");
